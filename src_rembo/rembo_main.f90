@@ -700,7 +700,7 @@ contains
     double precision :: dt
     double precision :: chck,chck2, t_tot
     double precision :: wt0, wt1
-    integer :: i, j, k, n_iter, nt
+    integer :: i, j, k, n_iter, nt, q, m
     character(len=512) :: fnm
     
     type(rembo_initvars) :: init
@@ -788,9 +788,19 @@ contains
     call nc_read_t(fnm,"zs",init%zs)
     
     ! read climate variables first (monthly for many years)
-    call nc_read_t(fnm,"t2m", init%t2m0)
-    call nc_read_t(fnm,"rhum",init%rhum0)
+    !call nc_read_t(fnm,"t2m", init%t2m0)
+    !call nc_read_t(fnm,"rhum",init%rhum0)
     
+    q = 0 
+    do k = 1, nt/12
+      do m = 1, 12 
+        q = q+1
+        call nc_read_t(fnm,"t2m", init%t2m0(q,:,:), start=[1,1,m,k],count=[nxl,nyl,1,1])
+        call nc_read_t(fnm,"rhum",init%rhum0(q,:,:),start=[1,1,m,k],count=[nxl,nyl,1,1])
+
+      end do 
+    end do 
+
     ! Convert lat/lon to rads
     init%lats = init%lats * torads
     init%lons = init%lons * torads
