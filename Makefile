@@ -102,6 +102,5 @@ $(o1)interp1D.o : $(main_dir)interp1D.f90
 	
 # -Dsimenv_run_char="' '"
 clean:
-	rm -f rembo.x $(emb_OBJ) $(embdriver_OBJ) $(o1)parameters.o $(o1)ncio.o $(o1)exchange.o \
-						   $(o1)interp1D.o $(o1)*.mod
+	rm -f rembo.x $(o1)*.o $(o1)*.mod
 
