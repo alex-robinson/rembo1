@@ -651,6 +651,7 @@ contains
     real (8), dimension(ny,nx) :: accum, precip
     real (8), dimension(ny,nx) :: m2, zs, zb, lats, lons, zb0
     real (8), dimension(ny,nx) :: mask_hydro
+    real (8), dimension(ny,nx) :: H_ice 
     character (len=256) :: fnm
     real (8), parameter :: dx = dxs
     
@@ -681,13 +682,19 @@ contains
     fnm = trim(topo_file)
     
     ! Get default topo variables (present-day)
-    call nc_read_t(fnm,"mask",  m2)
+    !call nc_read_t(fnm,"mask",  m2)
     call nc_read_t(fnm,"lat2D", lats)
     call nc_read_t(fnm,"lon2D", lons)
     call nc_read_t(fnm,"z_srf", zs)
     call nc_read_t(fnm,"z_bed", zb)
     !call nc_read_t(fnm,"zb0", zb0)
     zb0 = zb 
+    
+    ! Set ice(0)/land(1)/ocean(2) mask
+    call nc_read_t(fnm,"H_ice",H_ice)
+    m2 = 0.0
+    where(zs .gt. 0.0 .and. H_ice .eq. 0.0) m2 = 1.0 
+    where(zs .le. 0.0 .and. H_ice .eq. 0.0) m2 = 2.0  
 
     ! Load the hydrological basin
     !call nc_read_t(fnm,"mask_hydro",mask_hydro)

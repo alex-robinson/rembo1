@@ -800,6 +800,9 @@ contains
 
       end do 
     end do 
+    
+    ! Convert from Kelvin to Celcius 
+    init%t2m0 = init%t2m0 - 273.15 
 
     ! Convert lat/lon to rads
     init%lats = init%lats * torads
