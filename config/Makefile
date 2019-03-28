@@ -64,7 +64,7 @@ rembo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/int
 	@echo " "
 
 remboyelmo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
-       $(rembo_base) remboyelmo.f90
+       $(rembo_base) remboyelmo/remboyelmo.f90
 	$(FC) $(DFLAGS) $(FFLAGS) -o librembo/bin/remboyelmo.x $^ $(LFLAGS)
 	@echo " "
 	@echo "    librembo/bin/remboyelmo.x is ready."

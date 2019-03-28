@@ -42,8 +42,8 @@ test = librembo/bin/rembo_test.x
          help='Path where rembo simulation will run and store output.')
     parser.add_argument('par_path',metavar='PAR_PATH', type=str,
          help='Path to parameter file.')
-    parser.add_argument('par_path_2',metavar='PAR_PATH_2', type=str,
-         help='Path to parameter file 2.',default='None')
+    #parser.add_argument('par_path_2',metavar='PAR_PATH_2', type=str,
+    #     help='Path to parameter file 2.',default='remboyelmo/yelmo_Greenland.nml')
     
     # Parse the arguments
     args = parser.parse_args()
@@ -62,8 +62,9 @@ test = librembo/bin/rembo_test.x
     # Arguments
     rundir      = args.rundir 
     par_path    = args.par_path    # Path relative to current working directory (cwd)
-    par_path_2  = args.par_path_2  # Path relative to current working directory (cwd)
-    
+    #par_path_2  = args.par_path_2  # Path relative to current working directory (cwd)
+    par_path_2  = "remboyelmo/yelmo_Greenland.nml"
+
     # Additional options, consistency checks
 
     # Copy the executable file to the output directory, or
@@ -93,7 +94,7 @@ test = librembo/bin/rembo_test.x
         # Check yelmo related input files
 
         # Get path of constants parameter file
-        const_path = "yelmo_const_Earth.nml"
+        const_path = "remboyelmo/yelmo_const_Earth.nml"
 
         # Make sure input files exist 
         if not os.path.isfile(const_path):
