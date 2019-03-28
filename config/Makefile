@@ -63,6 +63,13 @@ rembo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/int
 	@echo "    librembo/bin/rembo.x is ready."
 	@echo " "
 
+remboyelmo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
+       $(rembo_base) remboyelmo.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -o librembo/bin/remboyelmo.x $^ $(LFLAGS)
+	@echo " "
+	@echo "    librembo/bin/remboyelmo.x is ready."
+	@echo " "
+
 # Static libraries 
 yelmo-static: $(yelmo_libs) $(yelmo_physics) $(yelmo_base) $(yelmo_tests)
 	ar rc $(objdir)/libyelmo.a $(yelmo_libs) $(yelmo_physics) $(yelmo_base) $(yelmo_tests)

@@ -41,8 +41,10 @@ test = librembo/bin/rembo_test.x
     parser.add_argument('rundir',metavar='RUNDIR', type=str,
          help='Path where rembo simulation will run and store output.')
     parser.add_argument('par_path',metavar='PAR_PATH', type=str,
-         help='Path where rembo simulation will run and store output.')
-
+         help='Path to parameter file.')
+    parser.add_argument('par_path_2',metavar='PAR_PATH_2', type=str,
+         help='Path to parameter file 2.',default='None')
+    
     # Parse the arguments
     args = parser.parse_args()
 
@@ -59,9 +61,9 @@ test = librembo/bin/rembo_test.x
 
     # Arguments
     rundir      = args.rundir 
-    par_path    = args.par_path  # Path relative to current working directory (cwd)
+    par_path    = args.par_path    # Path relative to current working directory (cwd)
+    par_path_2  = args.par_path_2  # Path relative to current working directory (cwd)
     
-
     # Additional options, consistency checks
 
     # Copy the executable file to the output directory, or
@@ -83,18 +85,23 @@ test = librembo/bin/rembo_test.x
         with_yelmo = False 
 
     # Also extract executable and path filenames 
-    exe_fname = os.path.basename(exe_path)
-    par_fname = os.path.basename(par_path)
+    exe_fname   = os.path.basename(exe_path)
+    par_fname   = os.path.basename(par_path)
+    par_fname_2 = os.path.basename(par_path_2)
 
     if with_yelmo:
-        # Copy yelmo related input files
+        # Check yelmo related input files
 
         # Get path of constants parameter file
-        const_path = "par/yelmo_const_Earth.nml"
+        const_path = "yelmo_const_Earth.nml"
 
         # Make sure input files exist 
         if not os.path.isfile(const_path):
             print("Input file does not exist: {}".format(const_path))
+            sys.exit() 
+
+        if not os.path.isfile(par_path_2):
+            print("Input file does not exist: {}".format(par_path_2))
             sys.exit() 
 
     if not os.path.isfile(par_path):
@@ -126,6 +133,7 @@ test = librembo/bin/rembo_test.x
     if with_yelmo:
         # Copy the constants parameter file
         shutil.copy(const_path,rundir)
+        shutil.copy(par_path_2,rundir)
 
     ## Generate symbolic links to input data folders
     srcname = "input"
