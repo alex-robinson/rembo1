@@ -44,8 +44,9 @@ contains
     character (len=*)    :: folder
 
     ! Get the number of arguments total
-    narg = command_argument_count()
-    
+    !narg = command_argument_count()
+    narg = 0 
+
     ! Set default values (in case no arguments provided)
     !folder = "output/test/"
     folder = "./"
@@ -380,7 +381,7 @@ contains
     implicit none
     
     character (len=*) :: nm
-    character (len=256), parameter :: fnm = "out.times.txt"
+    character (len=256), parameter :: fnm = "input/out.times.txt"
     character (len=256) :: tmpc1, tmpc2
     integer :: i, stat, n, ntot
     double precision :: y0, yf, t0, tf, dt1

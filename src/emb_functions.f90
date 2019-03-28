@@ -1911,7 +1911,7 @@ end module emb_functions
     character (len=256) :: fnm, fldr1
     character (len=*), optional :: fldr 
     
-    fldr1 = "output/"
+    fldr1 = "./"
     if (present(fldr)) fldr1 = trim(fldr)
 
     fnm = trim(fldr1)//"rembo.log"
