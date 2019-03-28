@@ -1062,7 +1062,7 @@ contains
     if (init_obs .eq. 0) then
     
       ! Open the station file
-      open(10,file="observations/stations.txt",status="old")
+      open(10,file="input/observations/stations.txt",status="old")
       
       read(10,*)    ! Skip the first line
       
@@ -1091,7 +1091,7 @@ contains
       close(10)
       
       ! Reopen the file, and read the id, but into a string!!
-      open(10,file="observations/stations.txt",status="old")
+      open(10,file="input/observations/stations.txt",status="old")
       read(10,*)    ! Skip the first line
       do q = 1, n_stations
         read(10,"(2x,a4,a9)")  stations(q)%src,  stations(q)%idc

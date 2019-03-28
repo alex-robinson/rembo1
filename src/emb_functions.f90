@@ -1228,7 +1228,7 @@ module emb_functions
     if (timetype .eq. 1) BTIME = btime0 - 1950.d0
     
     if ( init_sinsol .eq. 0 ) then
-      call INI_SINSOL("./")
+      call INI_SINSOL("./input/")
       init_sinsol = 1
     end if
     
