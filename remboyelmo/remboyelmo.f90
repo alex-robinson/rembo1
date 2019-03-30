@@ -18,6 +18,8 @@ program remboyelmo_driver
 
     ! Control variables 
     real(prec) :: time_init, time_end, time 
+    real(prec) :: dt1D_out, dt2D_out    
+    logical    :: calc_transient_climate
 
     logical, parameter :: use_hyster = .FALSE. 
 
@@ -57,6 +59,10 @@ program remboyelmo_driver
     time_init = year0 
     time_end  = yearf 
 
+    dT1D_out  =  10.0 
+    dt2D_out  = 100.0 
+
+    calc_transient_climate = .TRUE. 
 
     ! Initialize the ice sheet model Yelmo 
     path_out    = "./"
@@ -97,12 +103,12 @@ program remboyelmo_driver
     yelmo1%bnd%smb   = yelmo1%dta%pd%smb_ann
     yelmo1%bnd%T_srf = yelmo1%dta%pd%t2m_ann
 
-    ! ajr: TO DO figure out how to get ocean temperature fields without snapclim
-    ! (maybe actually use snapclim, but only for ocean?)
-!     call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
-!                          yelmo1%bnd%z_sl,depth=snp1%now%depth,to_ann=snp1%now%to_ann, &
-!                          dto_ann=snp1%now%to_ann - snp1%clim0%to_ann, &
-!                          regions=yelmo1%bnd%regions,dx=real(yelmo1%grid%G%dx,prec))
+
+    ! Set ocean temperature and temp anomaly
+    call marshelf_set_Tshlf(mshlf1,to_ann=273.15,dto_ann=0.0)
+
+    call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grid%G%dx,prec))
 
     yelmo1%bnd%bmb_shlf = mshlf1%now%bmb_shlf  
     yelmo1%bnd%T_shlf   = mshlf1%now%T_shlf  
@@ -129,9 +135,6 @@ program remboyelmo_driver
     call write_yreg_init(yelmo1,path_file1D,time_init=time_init,units="years",mask=yelmo1%bnd%ice_allowed)
     call write_yreg_step(yelmo1%reg,path_file1D,time=time) 
     
-    stop  
-
-
     ! Determine total iterations [yr]
     nstep_max = time_end - time_init 
   
@@ -141,7 +144,59 @@ program remboyelmo_driver
         ! Get current driver time [yr]
         time = time_init + n_step 
 
-        call sclimate(n_step)
+        ! == SEA LEVEL ==========================================================
+        call sealevel_update(sealev,year_bp=time)
+        yelmo1%bnd%z_sl  = sealev%z_sl 
+
+        ! == Yelmo ice sheet ===================================================
+        call yelmo_update(yelmo1,time)
+
+        ! == ISOSTASY ==========================================================
+        call isos_update(isos1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_sl,time)
+        yelmo1%bnd%z_bed = isos1%now%z_bed
+
+
+if (calc_transient_climate) then
+        ! == CLIMATE (ATMOSPHERE AND OCEAN) ====================================
+        if (mod(time,10.0)==0) then
+            
+            ! call REMBO1     
+            call sclimate(n_step)
+
+        end if 
+
+        ! Update surface mass balance and surface temperature
+!         yelmo1%bnd%smb   = smbpal1%ann%smb*conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
+!         yelmo1%bnd%T_srf = smbpal1%ann%tsrf 
+        yelmo1%bnd%smb   = yelmo1%dta%pd%smb_ann
+        yelmo1%bnd%T_srf = yelmo1%dta%pd%t2m_ann
+    
+!         ! == MARINE AND TOTAL BASAL MASS BALANCE ===============================
+        
+        call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grid%G%dx,prec))
+
+end if 
+        
+        yelmo1%bnd%bmb_shlf = mshlf1%now%bmb_shlf  
+        yelmo1%bnd%T_shlf   = mshlf1%now%T_shlf  
+
+        ! == BASAL HYDROLOGY ====================================================
+        call hydro_update(hyd1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%z_srf,yelmo1%bnd%z_sl, &
+                          yelmo1%tpo%now%bmb,yelmo1%tpo%now%f_grnd,yelmo1%tpo%par%dx,yelmo1%tpo%par%dx,time)
+        yelmo1%bnd%H_w   = hyd1%now%H_water 
+
+        if (mod(time,dt2D_out)==0) then 
+            call write_step_2D_combined(yelmo1,isos1,mshlf1,hyd1,path_file2D,time=time)
+        end if 
+
+        if (mod(time,dt1D_out)==0) then 
+            call write_yreg_step(yelmo1%reg,path_file1D,time=time) 
+        end if 
+
+        if (mod(time,10.0)==0) then
+            write(*,"(a,f14.4)") "yelmo::       time = ", time
+        end if 
 
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)
