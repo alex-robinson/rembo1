@@ -19,8 +19,8 @@ program remboyelmo_driver
     implicit none
 
     ! Control variables 
-    real(prec) :: time_init, time_end, time 
-    real(prec) :: dt1D_out, dt2D_out    
+    real(prec) :: time_init, time_end, time_equil, time
+    real(prec) :: dtt, dt1D_out, dt2D_out    
     logical    :: calc_transient_climate
 
     logical, parameter :: use_hyster = .FALSE. 
@@ -50,22 +50,6 @@ program remboyelmo_driver
     write(*,*) "Ice sheet: 3D thermomechanical hybrid ice sheet model (Yelmo)" 
     write(*,*)
 
-    ! Get start time in seconds
-    !call cpu_time(timer_start) 
-
-    ! Initialize the climate model REMBO, including loading parameters from options_rembo 
-    call sclimate(0)
-    !call timing(0,timer_start,timer_tot)
-
-    ! Update control parameters
-    time_init = 0.0 !year0 
-    time_end  = 1000.0 !yearf 
-
-    dT1D_out  =  10.0 
-    dt2D_out  = 100.0 
-
-    calc_transient_climate = .TRUE. 
-
     ! Initialize the ice sheet model Yelmo 
     path_out    = "./"
     path_par    = trim(path_out)//"yelmo_Greenland.nml"
@@ -79,6 +63,22 @@ program remboyelmo_driver
 
     ! Initialize data objects
     call yelmo_init(yelmo1,filename=path_par)
+    
+    ! Load control parameters (timing, etc)
+    call nml_read(path_par,"control","time_init",    time_init)                 ! [yr] Starting time
+    call nml_read(path_par,"control","time_end",     time_end)                  ! [yr] Ending time
+    call nml_read(path_par,"control","time_equil",   time_equil)                ! [yr] Years to equilibrate first
+    call nml_read(path_par,"control","dtt",          dtt)                       ! [yr] Main loop time step 
+    call nml_read(path_par,"control","dt1D_out",     dt1D_out)                  ! [yr] Frequency of 1D output 
+    call nml_read(path_par,"control","dt2D_out",     dt2D_out)                  ! [yr] Frequency of 2D output 
+    call nml_read(path_par,"control","transient",    calc_transient_climate)    ! Calculate transient climate? 
+
+    ! Get start time in seconds
+    call cpu_time(timer_start) 
+
+    ! Initialize the climate model REMBO, including loading parameters from options_rembo 
+    call sclimate(0)
+    call timing(0,timer_start,timer_tot)
     
     ! Initialize state variables (topo only)
     call yelmo_init_state_1(yelmo1,path_par,time=time_init)
@@ -205,7 +205,7 @@ end if
         end if 
 
         ! Update the timers for each timestep and output
-        !call timing(n_step,timer_start,timer_tot)
+        call timing(n_step,timer_start,timer_tot)
   
     end do 
 
