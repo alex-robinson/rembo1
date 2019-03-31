@@ -8,7 +8,7 @@
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine sclimate(n_step)
+  subroutine sclimate(n_step,z_srf,H_ice)
   
     use emb_global
     use emb_functions
@@ -18,6 +18,10 @@
     
     integer, parameter :: nx=nxs, ny=nys
     real (8), parameter :: dx=dxs
+    
+    integer, intent(IN) :: n_step
+    real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model
+    real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model 
     
     real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
     real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
@@ -32,7 +36,6 @@
     character(len=15) :: c_yr
     
     integer :: i, j, k, qq, n, n_now
-    integer :: n_step
     real (8) :: dtime1, dtime2
     real (8) :: yearnow, yearnow1, get_year
     real (8) :: T_warming_now, tmp_noise
@@ -121,7 +124,7 @@
       
       ! Update fields from exchange (if necessary)
       call vars2clim(zs,m2,transT%dVdt)
-            
+      
       ! Get current paleo forcing 
       !write(*,*) "climate:: forcing:",size(forcing)
       if ( boundary_forcing .gt. 0 ) call get_forcing_now(yearnow,m2)

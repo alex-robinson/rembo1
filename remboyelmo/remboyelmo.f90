@@ -161,7 +161,7 @@ if (calc_transient_climate) then
         if (mod(time,10.0)==0) then
             
             ! call REMBO1     
-            call sclimate(n_step)
+            call sclimate(n_step,yelmo1%tpo%now%z_srf,yelmo1%tpo%now%H_ice)
 
         end if 
 
