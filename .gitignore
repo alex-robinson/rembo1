@@ -5,3 +5,4 @@ ice_data
 output
 .obj
 *.x
+.DS_store
