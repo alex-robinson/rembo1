@@ -1,6 +1,7 @@
 program remboyelmo_driver
 
-    use emb_global
+    !use emb_global
+    use rembo_sclimate 
     use yelmo 
 
     ! External libraries
@@ -13,6 +14,7 @@ program remboyelmo_driver
     use geothermal
     
     use hyster 
+    use ncio 
 
     implicit none
 
@@ -24,7 +26,7 @@ program remboyelmo_driver
     logical, parameter :: use_hyster = .FALSE. 
 
     ! REMBO variables
-    integer :: n_step
+    integer :: n_step, nstep_max 
     double precision :: timer_start, timer_tot
 
     ! Yelmo variables
@@ -49,15 +51,15 @@ program remboyelmo_driver
     write(*,*)
 
     ! Get start time in seconds
-    call cpu_time(timer_start) 
+    !call cpu_time(timer_start) 
 
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
     call sclimate(0)
-    call timing(0,timer_start,timer_tot)
+    !call timing(0,timer_start,timer_tot)
 
     ! Update control parameters
-    time_init = year0 
-    time_end  = yearf 
+    time_init = 0.0 !year0 
+    time_end  = 1000.0 !yearf 
 
     dT1D_out  =  10.0 
     dt2D_out  = 100.0 
@@ -125,7 +127,7 @@ program remboyelmo_driver
 
     ! Run yelmo for several years with constant boundary conditions and topo
     ! to equilibrate thermodynamics and dynamics
-    call yelmo_update_equil(yelmo1,time,time_tot=50.0,topo_fixed=.FALSE.,dt=1.0,ssa_vel_max=500.0)
+!     call yelmo_update_equil(yelmo1,time,time_tot=50.0,topo_fixed=.FALSE.,dt=1.0,ssa_vel_max=500.0)
     
     ! 2D file 
     call yelmo_write_init(yelmo1,path_file2D,time_init=time,units="years")
@@ -161,7 +163,7 @@ if (calc_transient_climate) then
         if (mod(time,10.0)==0) then
             
             ! call REMBO1     
-            call sclimate(n_step,yelmo1%tpo%now%z_srf,yelmo1%tpo%now%H_ice)
+            call sclimate(n_step) !,yelmo1%tpo%now%z_srf,yelmo1%tpo%now%H_ice)
 
         end if 
 
@@ -170,7 +172,11 @@ if (calc_transient_climate) then
 !         yelmo1%bnd%T_srf = smbpal1%ann%tsrf 
         yelmo1%bnd%smb   = yelmo1%dta%pd%smb_ann
         yelmo1%bnd%T_srf = yelmo1%dta%pd%t2m_ann
-    
+        
+        ! Update surface mass balance and surface temperature from REMBO
+        yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
+        yelmo1%bnd%T_srf = rembo_ann%T_srf
+        
 !         ! == MARINE AND TOTAL BASAL MASS BALANCE ===============================
         
         call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
@@ -199,7 +205,7 @@ end if
         end if 
 
         ! Update the timers for each timestep and output
-        call timing(n_step,timer_start,timer_tot)
+        !call timing(n_step,timer_start,timer_tot)
   
     end do 
 
@@ -383,8 +389,8 @@ contains
         call nc_write(filename,"dzbdt",isos%now%dzbdt,units="m/a",long_name="Bedrock uplift rate", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
  
-        call nc_write(filename,"dT_shlf",mshlf%now%dT_shlf,units="K",long_name="Shelf temperature anomaly", &
-                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+!         call nc_write(filename,"dT_shlf",mshlf%now%dT_shlf,units="K",long_name="Shelf temperature anomaly", &
+!                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
 
 !         call nc_write(filename,"Ta_ann",snp%now%ta_ann,units="K",long_name="Near-surface air temperature (ann)", &
 !                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
@@ -400,6 +406,20 @@ contains
 !         call nc_write(filename,"dPr_ann",(snp%now%pr_ann-snp%clim0%pr_ann)*1e-3,units="m/a water equiv.",long_name="Precipitation anomaly (ann)", &
 !                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         
+        ! Climate and surface 
+
+        call nc_write(filename,"Ta_ann",rembo_ann%T_ann,units="K",long_name="Near-surface air temperature (ann)", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        call nc_write(filename,"Ta_jja",rembo_ann%T_jja,units="K",long_name="Near-surface air temperature (jja)", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        call nc_write(filename,"Ta_djf",rembo_ann%T_djf,units="K",long_name="Near-surface air temperature (djf)", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        call nc_write(filename,"Pr_ann",rembo_ann%pr*1e-3,units="m/a water equiv.",long_name="Precipitation (ann)", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        call nc_write(filename,"smb_ann",rembo_ann%smb*1e-3,units="m/a water equiv.",long_name="Surface mass balance (ann)", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        
+
         ! Ice thickness comparison with present-day 
         call nc_write(filename,"H_ice_errpd",ylmo%tpo%now%H_ice-ylmo%dta%pd%H_ice,units="m",long_name="Ice thickness error wrt present day", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)

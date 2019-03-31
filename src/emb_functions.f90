@@ -1827,34 +1827,39 @@ module emb_functions
   ! Author     :  Alex Robinson
   ! Purpose    :  Get the i,j indices of a specific x,y value
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine xy2index(grid,x,y,inow,jnow)
+  subroutine xy2index(grd,x,y,inow,jnow)
     
     implicit none
   
-    type(location) :: grid(nys,nxs)
+    type(location) :: grd(nys,nxs)
     integer :: nx, ny
     integer :: inow, jnow, k
     real (8) :: x, y, dx, dy
     
-    nx = size(grid,2)
-    ny = size(grid,1)
+    nx = size(grd,2)
+    ny = size(grd,1)
     
     do inow = 1, nx
-      if (grid(1,inow)%x .ge. x) exit
+      if (grd(1,inow)%x .ge. x) exit
     end do
     
     do jnow = 1, ny
-      if (grid(jnow,1)%y .ge. y) exit
+      if (grd(jnow,1)%y .ge. y) exit
     end do   
     
-    if ( inow .eq. 1 ) write(*,*) grid(1,inow)%x, ":",x
-    if ( jnow .eq. 1 ) write(*,*) grid(jnow,1)%y, ":",y
+    if ( inow .eq. 1 ) write(*,*) grd(1,inow)%x, ":",x
+    if ( jnow .eq. 1 ) write(*,*) grd(jnow,1)%y, ":",y
     
-    dx = (grid(1,inow)%x-x) / (grid(1,inow)%x-grid(1,inow-1)%x)
-    dy = (grid(jnow,1)%y-y) / (grid(jnow,1)%y-grid(jnow-1,1)%y)
-    if (dx .ge. 0.5) inow = inow-1
-    if (dy .ge. 0.5) jnow = jnow-1
-    
+    if (inow .gt. 1) then 
+      dx = (grd(1,inow)%x-x) / (grd(1,inow)%x-grd(1,inow-1)%x)
+      if (dx .ge. 0.5) inow = inow-1
+    end if 
+
+    if (jnow .gt. 1) then 
+      dy = (grd(jnow,1)%y-y) / (grd(jnow,1)%y-grd(jnow-1,1)%y)
+      if (dy .ge. 0.5) jnow = jnow-1
+    end if 
+
     return
   
   end subroutine xy2index

@@ -206,7 +206,7 @@ module emb_global
   end type
   
   type(saved_type), dimension(:,:), allocatable :: saved
-
+  
   type saved_type_mon
     double precision, dimension(:,:,:), allocatable :: tt, pdd_corr
     double precision, dimension(:,:,:), allocatable :: melt, as, S, S0
@@ -775,7 +775,27 @@ contains
   
     
 end module emb_global
-
+  
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  ! Subroutine : c l i m _ t i m e
+  ! Author     : Alex Robinson, 27. Oct 2008
+  ! Purpose    : Determine the current year given the timestep in years
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  function get_year(n_step)
+    
+    use emb_global
+    
+    implicit none
+    
+    integer :: n_step
+    double precision :: get_year
+    
+    get_year = year0 + n_step
+  
+    return
+  
+  end function get_year
+  
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  t i m i n g
   ! Author     :  Alex Robinson

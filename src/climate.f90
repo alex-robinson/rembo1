@@ -1,3 +1,33 @@
+module rembo_sclimate
+
+  implicit none 
+
+  type rembo_annual_type  ! ij indices 
+    double precision, allocatable :: pr(:,:) 
+    double precision, allocatable :: sf(:,:) 
+    double precision, allocatable :: smb(:,:) 
+    double precision, allocatable :: melt(:,:) 
+    double precision, allocatable :: runoff(:,:)
+    double precision, allocatable :: refrz(:,:) 
+    double precision, allocatable :: H_snow(:,:)
+    double precision, allocatable :: T_srf(:,:)  
+    double precision, allocatable :: T_ann(:,:) 
+    double precision, allocatable :: T_pann(:,:) 
+    double precision, allocatable :: T_jja(:,:) 
+    double precision, allocatable :: T_djf(:,:) 
+    double precision, allocatable :: pdds(:,:)
+
+  end type 
+
+  type(rembo_annual_type) :: rembo_ann 
+
+  private
+  public :: sclimate 
+  public :: rembo_annual_type
+  public :: rembo_ann
+
+contains 
+
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! Subroutine :  s c l i m a t e
 ! Author   :  Alex Robinson
@@ -29,6 +59,7 @@
     real (8), dimension(ny,nx) :: restart_snowh
     real (8), dimension(ny,nx) :: restart_dh, restart_ap
     real (8), dimension(ny,nx) :: mask
+    real (8), dimension(ny,nx) :: Hi 
     real (8) :: wt, pscalar, sfac
 
     character(len=10) :: c_dxs, dattype
@@ -58,6 +89,39 @@
     ! Initialize information output location
     if (nstep .eq. 0) then
       
+      ! ================================================
+      ! remboyelmo 
+      
+      allocate(rembo_ann%pr(nx,ny))
+      allocate(rembo_ann%sf(nx,ny))
+      allocate(rembo_ann%smb(nx,ny))
+      allocate(rembo_ann%melt(nx,ny))
+      allocate(rembo_ann%runoff(nx,ny))
+      allocate(rembo_ann%refrz(nx,ny))
+      allocate(rembo_ann%H_snow(nx,ny))
+      allocate(rembo_ann%T_srf(nx,ny))
+      allocate(rembo_ann%T_ann(nx,ny))
+      allocate(rembo_ann%T_pann(nx,ny))
+      allocate(rembo_ann%T_jja(nx,ny))
+      allocate(rembo_ann%T_djf(nx,ny))
+      allocate(rembo_ann%pdds(nx,ny))
+
+      rembo_ann%pr     = 0.0 
+      rembo_ann%sf     = 0.0 
+      rembo_ann%smb    = 0.0 
+      rembo_ann%melt   = 0.0 
+      rembo_ann%runoff = 0.0 
+      rembo_ann%refrz  = 0.0 
+      rembo_ann%H_snow = 0.0 
+      rembo_ann%T_srf  = 0.0 
+      rembo_ann%T_ann  = 0.0 
+      rembo_ann%T_pann = 0.0 
+      rembo_ann%T_jja  = 0.0 
+      rembo_ann%T_djf  = 0.0 
+      rembo_ann%pdds   = 0.0 
+
+      ! ================================================
+
       call emb_globinit(1)
       
       if(init_rembo .eq. 0) then
@@ -123,7 +187,35 @@
     if ( now%clim .or. now%smb ) then
       
       ! Update fields from exchange (if necessary)
-      call vars2clim(zs,m2,transT%dVdt)
+      !call vars2clim(zs,m2,transT%dVdt)
+      
+      ! ================================================
+      ! remboyelmo 
+
+      if (present(z_srf) .and. present(H_ice)) then 
+        ! Update fields from external model (zs and m2), if available
+        ! (transposed i,j => j,i)
+
+        do j = 1, ny 
+        do i = 1, nx 
+
+          ! Update surface elevation
+          zs(j,i) = z_srf(i,j)
+
+          ! Update ice thickness 
+          Hi(j,i) = H_ice(i,j) 
+
+        end do 
+        end do 
+
+        ! Set ice(0)/land(1)/ocean(2) mask
+        m2 = 0.0
+        where(zs .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
+        where(zs .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
+      
+      end if 
+
+      ! ================================================
       
       ! Get current paleo forcing 
       !write(*,*) "climate:: forcing:",size(forcing)
@@ -320,6 +412,39 @@
                     saved%refrozen,saved%evap,saved%smb,saved%h_snow, "save")
     end if
     
+    ! ================================================
+    ! remboyelmo 
+if (.TRUE.) then 
+    if (now%smb .or. now%clim) then 
+      ! Update annual rembo variables ([nx,ny] indices) for external use
+
+      do j = 1, ny 
+      do i = 1, nx 
+
+        ! [mm we / a]
+        rembo_ann%pr(i,j)     = saved(j,i)%precip 
+        rembo_ann%sf(i,j)     = saved(j,i)%snow 
+        rembo_ann%smb(i,j)    = saved(j,i)%smb 
+        rembo_ann%melt(i,j)   = saved(j,i)%melted_ice 
+        rembo_ann%runoff(i,j) = saved(j,i)%runoff_snow + saved(j,i)%runoff_rain
+        rembo_ann%refrz(i,j)  = saved(j,i)%refrozen 
+        rembo_ann%H_snow(i,j) = saved(j,i)%h_snow
+
+        ! [K] 
+        rembo_ann%T_srf(i,j)  = saved(j,i)%tts  + 273.15   ! [degC] => [K]
+        rembo_ann%T_ann(i,j)  = saved(j,i)%tt   + 273.15   ! [degC] => [K]
+        rembo_ann%T_pann(i,j) = saved(j,i)%ttp  + 273.15   ! [degC] => [K]
+        rembo_ann%T_jja(i,j)  = saved(j,i)%tjja + 273.15   ! [degC] => [K]
+        rembo_ann%T_djf(i,j)  = saved(j,i)%tdjf + 273.15   ! [degC] => [K]
+        rembo_ann%pdds(i,j)   = saved(j,i)%pdds 
+
+      end do 
+      end do 
+
+    end if 
+end if 
+    ! ================================================
+
     ! Output variables for climber
     !if ( boundary_forcing .eq. 3 .and. (now%smb .or. now%clim) ) then
     !  call write_for_climber(trim(outfldr),nstep,lats*todegs,m2,zs,transT%dVdt)
@@ -387,21 +512,38 @@
     end do
     saved%ttp = ( saved%ttp / tmp )
     
-    ! ajr: this appears to be broken... shouldn't it add onto the saved%pdds each month?
-    ! check in detail!
+    ! ajr: this may be broken, added reset to zero (ajr, 2019-03-31)
+    saved%pdds = 0.0
     do m = 1, nm
       saved%pdds = max( mon(m)%tt, 0.d0 ) * day_month
     end do
     
-    saved%precip      = ann%pp          *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
-    saved%snow        = ann%snow        *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s                                                  
-    saved%melted_ice  = ann%melted_ice  *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
-    saved%runoff_snow = ann%runoff_snow *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
-    saved%runoff_rain = ann%runoff_rain *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
-    saved%smb         = (ann%pp-ann%runoff) *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
-    saved%evap        = 0.d0
+!     saved%precip      = ann%pp          *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
+!     saved%snow        = ann%snow        *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s                                                  
+!     saved%melted_ice  = ann%melted_ice  *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
+!     saved%runoff_snow = ann%runoff_snow *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
+!     saved%runoff_rain = ann%runoff_rain *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
+!     saved%smb         = (ann%pp-ann%runoff) *1d-3  / sec_year /rho_i_w     ! mm.w.e. / a => m.i.e. / s
+!     saved%evap        = 0.d0
                                                     ! *Note: divide by rho_i_w, bc m3 in denominator!
-        
+    
+    ! ================================================
+    ! remboyelmo 
+if (.TRUE.) then 
+    ! Make standard output in [mm.w.e. / a]
+    saved%precip      = ann%pp                     
+    saved%snow        = ann%snow        
+    saved%melted_ice  = ann%melted_ice  
+    saved%runoff_snow = ann%runoff_snow 
+    saved%runoff_rain = ann%runoff_rain 
+    saved%refrozen    = ann%refrozen    
+    saved%smb         = (ann%ice-ann%melted_ice)
+    saved%evap        = 0.d0
+    saved%h_snow      = ann%snowh  
+    saved%pdds        = ann%tte
+end if 
+    ! ================================================
+
     call cpu_time(timer%now)           ! get current time in seconds
     timer%pddold = (timer%now-timer%pddold)  ! Get elapsed time in seconds
     
@@ -411,24 +553,4 @@
   
   end subroutine conventional
   
-  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Subroutine : c l i m _ t i m e
-  ! Author     : Alex Robinson, 27. Oct 2008
-  ! Purpose    : Determine the current year given the timestep in years
-  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  function get_year(n_step)
-    
-    use emb_global
-    
-    implicit none
-    
-    integer :: n_step
-    double precision :: get_year
-    
-    get_year = year0 + n_step
-  
-    return
-  
-  end function get_year
-
-
+end module rembo_sclimate

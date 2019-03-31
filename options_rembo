@@ -26,7 +26,7 @@
     --   :  ap_fixed                    =  0
     --   :  boundary_forcing            =  0
     --   :  anf_dat                     =  1
-    --   :  clim_coupled                =  0
+    --   :  clim_coupled                =  1
     --   :  transient                   =  0
     --   :  kill                        =  0
     --   :  slow_hyst                   =  0

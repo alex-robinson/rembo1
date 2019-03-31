@@ -655,17 +655,34 @@ contains
       ! Save the vegetation PDDs field
       saved%pdds = veg_pdds
       
-      ! Convert saved quantities for sicopolis: mm.w.e. / a => m.i.e. / s
-      ! *Note: divide by rho_i_w, bc m3 in denominator!
-      saved%precip      = ann%pp          *1d-3  / sec_year /rho_i_w           
-      saved%snow        = ann%snow        *1d-3  / sec_year /rho_i_w
-      saved%melted_ice  = ann%melted_ice  *1d-3  / sec_year /rho_i_w
-      saved%runoff_snow = ann%runoff_snow *1d-3  / sec_year /rho_i_w
-      saved%runoff_rain = ann%runoff_rain *1d-3  / sec_year /rho_i_w
-      saved%refrozen    = ann%refrozen    *1d-3  / sec_year /rho_i_w
-      saved%smb         = (ann%ice-ann%melted_ice) *1d-3  / sec_year /rho_i_w
+!       ! Convert saved quantities for sicopolis: mm.w.e. / a => m.i.e. / s
+!       ! *Note: divide by rho_i_w, bc m3 in denominator!
+!       saved%precip      = ann%pp          *1d-3  / sec_year /rho_i_w           
+!       saved%snow        = ann%snow        *1d-3  / sec_year /rho_i_w
+!       saved%melted_ice  = ann%melted_ice  *1d-3  / sec_year /rho_i_w
+!       saved%runoff_snow = ann%runoff_snow *1d-3  / sec_year /rho_i_w
+!       saved%runoff_rain = ann%runoff_rain *1d-3  / sec_year /rho_i_w
+!       saved%refrozen    = ann%refrozen    *1d-3  / sec_year /rho_i_w
+!       saved%smb         = (ann%ice-ann%melted_ice) *1d-3  / sec_year /rho_i_w
+!       saved%evap        = 0.d0
+!       saved%h_snow      = ann%snowh       *1d-3  / rho_i_w
+      
+      ! ================================================
+      ! remboyelmo 
+if (.TRUE.) then 
+      ! Make standard output in [mm.w.e. / a]
+      saved%precip      = ann%pp                     
+      saved%snow        = ann%snow        
+      saved%melted_ice  = ann%melted_ice  
+      saved%runoff_snow = ann%runoff_snow 
+      saved%runoff_rain = ann%runoff_rain 
+      saved%refrozen    = ann%refrozen    
+      saved%smb         = (ann%ice-ann%melted_ice)
       saved%evap        = 0.d0
-      saved%h_snow      = ann%snowh       *1d-3  / rho_i_w
+      saved%h_snow      = ann%snowh  
+      saved%pdds        = veg_pdds 
+end if 
+      ! ================================================
 
       call cpu_time(timer%now)           ! get current time in seconds
       timer%emb = (timer%now-timer%emb)  ! Get elapsed time in seconds
