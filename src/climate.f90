@@ -22,7 +22,8 @@ module rembo_sclimate
   type(rembo_annual_type) :: rembo_ann 
 
   private
-  public :: sclimate 
+  public :: rembo_init 
+  public :: rembo_update 
   public :: rembo_annual_type
   public :: rembo_ann
 
@@ -38,7 +39,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine sclimate(n_step,z_srf,H_ice)
+  subroutine rembo_update(n_step,z_srf,H_ice)
   
     use emb_global
     use emb_functions
@@ -59,7 +60,6 @@ contains
     real (8), dimension(ny,nx) :: restart_snowh
     real (8), dimension(ny,nx) :: restart_dh, restart_ap
     real (8), dimension(ny,nx) :: mask
-    real (8), dimension(ny,nx) :: Hi 
     real (8) :: wt, pscalar, sfac
 
     character(len=10) :: c_dxs, dattype
@@ -138,7 +138,7 @@ contains
         ! Calculate the horizontal gradient of the initial topography
         call hgrad(fields0%zs,dx,fields0%dzs)
         
-        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Initialized topography for sclimate."
+        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Initialized topography for rembo_update."
         
         ! Initialize output nc file
         call rembo_nc(trim(outfldr)//"clima.nc","years",time_out(1)*1d3, &
@@ -194,25 +194,9 @@ contains
 
       if (present(z_srf) .and. present(H_ice)) then 
         ! Update fields from external model (zs and m2), if available
-        ! (transposed i,j => j,i)
+        
+        call rembo_get_topo(zs,m2,z_srf,H_ice)
 
-        do j = 1, ny 
-        do i = 1, nx 
-
-          ! Update surface elevation
-          zs(j,i) = z_srf(i,j)
-
-          ! Update ice thickness 
-          Hi(j,i) = H_ice(i,j) 
-
-        end do 
-        end do 
-
-        ! Set ice(0)/land(1)/ocean(2) mask
-        m2 = 0.0
-        where(zs .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
-        where(zs .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
-      
       end if 
 
       ! ================================================
@@ -452,8 +436,142 @@ end if
 
     return
   
-  end subroutine sclimate
+  end subroutine rembo_update
   
+  subroutine rembo_init()
+  
+    use emb_global
+    use emb_functions
+    use rembo_main
+  
+    implicit none
+    
+    integer, parameter :: nx=nxs, ny=nys
+    real (8), parameter :: dx=dxs
+    
+    real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
+    real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
+    real (8), dimension(ny,nx) :: restart_tt, restart_pp
+    real (8), dimension(ny,nx) :: restart_snowh
+    real (8), dimension(ny,nx) :: restart_dh, restart_ap
+    real (8), dimension(ny,nx) :: mask
+    real (8), dimension(ny,nx) :: Hi 
+    real (8) :: wt, pscalar, sfac
+
+    character(len=10) :: c_dxs, dattype
+    character(len=256) :: fnm, restart_folder
+    character(len=15) :: c_yr
+    
+    integer :: i, j, k, qq, n, n_now
+
+    ! Set emb global nstep to zero
+    nstep = 0
+    
+      ! ================================================
+      ! remboyelmo 
+      
+      allocate(rembo_ann%pr(nx,ny))
+      allocate(rembo_ann%sf(nx,ny))
+      allocate(rembo_ann%smb(nx,ny))
+      allocate(rembo_ann%melt(nx,ny))
+      allocate(rembo_ann%runoff(nx,ny))
+      allocate(rembo_ann%refrz(nx,ny))
+      allocate(rembo_ann%H_snow(nx,ny))
+      allocate(rembo_ann%T_srf(nx,ny))
+      allocate(rembo_ann%T_ann(nx,ny))
+      allocate(rembo_ann%T_pann(nx,ny))
+      allocate(rembo_ann%T_jja(nx,ny))
+      allocate(rembo_ann%T_djf(nx,ny))
+      allocate(rembo_ann%pdds(nx,ny))
+
+      rembo_ann%pr     = 0.0 
+      rembo_ann%sf     = 0.0 
+      rembo_ann%smb    = 0.0 
+      rembo_ann%melt   = 0.0 
+      rembo_ann%runoff = 0.0 
+      rembo_ann%refrz  = 0.0 
+      rembo_ann%H_snow = 0.0 
+      rembo_ann%T_srf  = 0.0 
+      rembo_ann%T_ann  = 0.0 
+      rembo_ann%T_pann = 0.0 
+      rembo_ann%T_jja  = 0.0 
+      rembo_ann%T_djf  = 0.0 
+      rembo_ann%pdds   = 0.0 
+
+      ! ================================================
+
+      call emb_globinit(1)
+      
+      if(init_rembo .eq. 0) then
+        
+        ! Allocate day, mon and year structures
+        !allocate( day(nk), mon(nm) )
+        
+        ! Initialize stuff needed for boundary routine called in ini_sico!
+        m2        = fields0%m2
+        zs        = fields0%zs
+        lats      = fields0%lats
+        lons      = fields0%lons
+        
+        ! Calculate the horizontal gradient of the initial topography
+        call hgrad(fields0%zs,dx,fields0%dzs)
+        
+        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Initialized topography for rembo_update."
+        
+        ! Initialize output nc file
+        call rembo_nc(trim(outfldr)//"clima.nc","years",time_out(1)*1d3, &
+                      lats*todegs,lons*todegs,sico_grid%x,sico_grid%y,mask_hydro=fields0%mask_hydro)  
+                          
+        init_rembo = 1
+
+      end if
+
+    return 
+
+  end subroutine rembo_init 
+
+  subroutine rembo_get_topo(zs,m2,z_srf,H_ice)
+
+    implicit none 
+
+    real(8), intent(OUT) :: zs(:,:)      ! [ny,nx]
+    real(8), intent(OUT) :: m2(:,:)      ! [ny,nx]
+    real(8), intent(IN)  :: z_srf(:,:)   ! [nx,ny]
+    real(8), intent(IN)  :: H_ice(:,:)   ! [nx,ny] 
+
+    ! Local variables 
+    integer :: i, j, nx, ny 
+    real(8), allocatable :: Hi(:,:)  
+
+    nx = size(zs,2)
+    ny = size(zs,1) 
+
+    allocate(Hi(ny,nx)) 
+
+    ! Update fields from external model (zs and m2), if available
+    ! (transposed i,j => j,i)
+
+    do j = 1, ny 
+    do i = 1, nx 
+
+      ! Update surface elevation
+      zs(j,i) = z_srf(i,j)
+
+      ! Update ice thickness 
+      Hi(j,i) = H_ice(i,j) 
+
+    end do 
+    end do 
+
+    ! Set ice(0)/land(1)/ocean(2) mask
+    m2 = 0.0
+    where(zs .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
+    where(zs .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
+      
+    return 
+
+  end subroutine rembo_get_topo 
+
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l
   ! Author     : Alex Robinson, 27. Oct 2009

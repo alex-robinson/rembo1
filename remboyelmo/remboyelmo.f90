@@ -77,9 +77,9 @@ program remboyelmo_driver
     call cpu_time(timer_start) 
 
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
-    call sclimate(0)
+    call rembo_init()
     call timing(0,timer_start,timer_tot)
-    
+
     ! Initialize state variables (topo only)
     call yelmo_init_state_1(yelmo1,path_par,time=time_init)
     
@@ -98,14 +98,13 @@ program remboyelmo_driver
     yelmo1%bnd%H_sed = sed1%now%H 
     yelmo1%bnd%H_w   = 0.0   ! use hydro_init_state later
 
-    ! ajr: TO DO figure out how to get this from REMBO properly
-    !yelmo1%bnd%smb   = smbpal1%ann%smb*conv_we_ie*1e-3    ! [mm we/a] => [m ie/a]
-    !yelmo1%bnd%T_srf = smbpal1%ann%tsrf 
-
-    yelmo1%bnd%smb   = yelmo1%dta%pd%smb_ann
-    yelmo1%bnd%T_srf = yelmo1%dta%pd%t2m_ann
-
-
+    ! Update REMBO, with ice sheet topography    
+    call rembo_update(n_step,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
+            
+    ! Update surface mass balance and surface temperature from REMBO
+    yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
+    yelmo1%bnd%T_srf = rembo_ann%T_srf
+    
     ! Set ocean temperature and temp anomaly
     call marshelf_set_Tshlf(mshlf1,to_ann=273.15,dto_ann=0.0)
 
@@ -163,20 +162,14 @@ if (calc_transient_climate) then
         if (mod(time,10.0)==0) then
             
             ! call REMBO1     
-            call sclimate(n_step) !,yelmo1%tpo%now%z_srf,yelmo1%tpo%now%H_ice)
-
+            call rembo_update(n_step,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
+            
+            ! Update surface mass balance and surface temperature from REMBO
+            yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
+            yelmo1%bnd%T_srf = rembo_ann%T_srf
+                
         end if 
 
-        ! Update surface mass balance and surface temperature
-!         yelmo1%bnd%smb   = smbpal1%ann%smb*conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
-!         yelmo1%bnd%T_srf = smbpal1%ann%tsrf 
-        yelmo1%bnd%smb   = yelmo1%dta%pd%smb_ann
-        yelmo1%bnd%T_srf = yelmo1%dta%pd%t2m_ann
-        
-        ! Update surface mass balance and surface temperature from REMBO
-        yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
-        yelmo1%bnd%T_srf = rembo_ann%T_srf
-        
 !         ! == MARINE AND TOTAL BASAL MASS BALANCE ===============================
         
         call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
