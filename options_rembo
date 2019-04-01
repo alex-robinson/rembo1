@@ -36,7 +36,7 @@
 
 ## Writing switches
     --   :  write_emb_d                 =  0
-    --   :  write_rembo_m               =  1
+    --   :  write_rembo_m               =  0
     --   :  write_rembo_d               =  0
     --   :  write_rembo_r               =  0
     
@@ -44,12 +44,12 @@
 #  yr    :  year0                       = -550e3
 #  yr    :  yearf                       = -350e3
    yr    :  year0                       =  0.0
-   yr    :  yearf                       =  1000.0
+   yr    :  yearf                       =  1000000.0
    yr    :  year_offset                 =  0
    yr    :  dtime_emb                   =  100
    yr    :  dtime_smb                   =  10
    yr    :  dto_clim                    =  100
-   yr    :  dto_clim2d                  =  100
+   yr    :  dto_clim2d                  =  500
    yr    :  dto_timer                   =  100
    yr    :  n_equili                    =  10
   days   :  dte                         =  4.0e-2
