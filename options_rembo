@@ -49,7 +49,7 @@
    yr    :  dtime_emb                   =  100
    yr    :  dtime_smb                   =  10
    yr    :  dto_clim                    =  100
-   yr    :  dto_clim2d                  =  500
+   yr    :  dto_clim2d                  =  10000 
    yr    :  dto_timer                   =  100
    yr    :  n_equili                    =  10
   days   :  dte                         =  4.0e-2
