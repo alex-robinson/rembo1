@@ -13,8 +13,12 @@ LISROOT = /home/fispalma25/apps/lis/lis
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
-FFLAGS  = -module $(objdir) -L$(objdir) $(INC_COORD)
-LFLAGS  = $(LIB_NC) $(LIB_COORD) $(LIB_LIS) -Wl,-zmuldefs
+YELMOROOT = yelmo/libyelmo
+INC_YELMO = -I${YELMOROOT}/include 
+LIB_YELMO = -L${YELMOROOT}/include -lyelmo
+
+FFLAGS  = -module $(objdir) -L$(objdir) $(INC_YELMO) $(INC_COORD)
+LFLAGS  = -Wl,-zmuldefs $(LIB_YELMO) $(LIB_COORD) $(LIB_NC) $(LIB_LIS) 
 
 DFLAGS_NODEBUG = -vec-report0 -O2 -fp-model precise
 DFLAGS_DEBUG   = -C -traceback -ftrapuv -fpe0 -check all -vec-report0 -fp-model precise

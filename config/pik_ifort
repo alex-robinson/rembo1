@@ -19,7 +19,7 @@ INC_YELMO = -I${YELMOROOT}/include
 LIB_YELMO = -L${YELMOROOT}/include -lyelmo
 
 FFLAGS  = -module $(objdir) -L$(objdir) $(INC_YELMO) $(INC_COORD)
-LFLAGS  = $(LIB_LIS) -Wl,-zmuldefs $(LIB_YELMO) $(LIB_COORD) $(LIB_NC)
+LFLAGS  = -Wl,-zmuldefs $(LIB_YELMO) $(LIB_COORD) $(LIB_NC) $(LIB_LIS) 
 
 DFLAGS_NODEBUG = -O2 -fp-model precise
 DFLAGS_DEBUG   = -C -traceback -ftrapuv -fpe0 -check all -fp-model precise
