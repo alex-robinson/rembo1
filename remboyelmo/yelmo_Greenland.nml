@@ -274,13 +274,13 @@
     use_obs            = False
     obs_path           = "ice_data/{domain}/{grid_name}/{grid_name}_BMELT-R13.nc"
     obs_name           = "bm_actual_sm"
-    obs_f              = -10.0
+    obs_f              = -20.0
     obs_lim            = 100.0
     basin_name         = "None"         !"northwest" "northeast" "east"
     basin_bmb          = 0.0            !        -1.0       -1.0   -1.0
     c_shlf             = 9999.0 
     kappa_shlf         = 9999.0 
-    f_grz_shlf         = 10.0
+    f_grz_shlf         = 1.0
     c_grz              = 1.0 
     kappa_grz          = 10.0 
     grz_length         = 20.0           ! [km]   

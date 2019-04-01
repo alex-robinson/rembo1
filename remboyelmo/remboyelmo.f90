@@ -79,7 +79,7 @@ program remboyelmo_driver
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
     call rembo_init()
     call timing(0,timer_start,timer_tot)
-
+    
     ! Initialize state variables (topo only)
     call yelmo_init_state_1(yelmo1,path_par,time=time_init)
     
