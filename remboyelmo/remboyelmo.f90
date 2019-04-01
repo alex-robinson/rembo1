@@ -99,7 +99,7 @@ program remboyelmo_driver
     yelmo1%bnd%H_w   = 0.0   ! use hydro_init_state later
 
     ! Update REMBO, with ice sheet topography    
-    call rembo_update(n_step,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
+    call rembo_update(0,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
             
     ! Update surface mass balance and surface temperature from REMBO
     yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
