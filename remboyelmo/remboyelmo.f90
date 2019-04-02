@@ -31,10 +31,9 @@ program remboyelmo_driver
 
     ! Yelmo variables
     character(len=512) :: path_out, path_par, path_const 
-    character(len=512) :: path_file1D, path_file2D 
+    character(len=512) :: path_file1D, path_file2D, path_filehyst 
     real(prec) :: conv_km3_Gt
-    real(prec) :: enh_out, cf_out 
-
+    
     type(yelmo_class)      :: yelmo1 
     type(sealevel_class)   :: sealev
     type(hyster_class)     :: hyst1   
@@ -57,7 +56,9 @@ program remboyelmo_driver
     path_const  = trim(path_out)//"yelmo_const_Earth.nml"
     path_file1D = trim(path_out)//"yelmo1D.nc"
     path_file2D = trim(path_out)//"yelmo2D.nc"
-  
+    
+    path_filehyst = trim(path_out)//"yelmohyst.nc"
+
     ! General initialization of yelmo constants (used globally)
     call yelmo_global_init(path_const)
     conv_km3_Gt = rho_ice *1e-3
@@ -65,11 +66,6 @@ program remboyelmo_driver
     ! Initialize data objects
     call yelmo_init(yelmo1,filename=path_par)
     
-    ! Define parameter values for printing 
-    enh_out = yelmo1%mat%par%enh_stream 
-    cf_out  = yelmo1%dyn%par%cf_stream 
-    if (yelmo1%dyn%par%mix_method .eq. -2) cf_out = 0.0 
-
     ! Load control parameters (timing, etc)
     call nml_read(path_par,"control","time_init",    time_init)                 ! [yr] Starting time
     call nml_read(path_par,"control","time_end",     time_end)                  ! [yr] Ending time
@@ -151,6 +147,10 @@ program remboyelmo_driver
     call write_yreg_init(yelmo1,path_file1D,time_init=time_init,units="years",mask=yelmo1%bnd%ice_allowed)
     call write_yreg_step(yelmo1%reg,path_file1D,time=time) 
     
+    ! Hysteresis file 
+    call write_hyst_init(path_filehyst,time_init,yelmo1)
+    call write_hyst_step(path_filehyst,time_init,yelmo1,hyst1,T_summer)
+
     ! Determine total iterations [yr]
     nstep_max = time_end - time_init 
   
@@ -215,13 +215,13 @@ end if
             call write_yreg_step(yelmo1%reg,path_file1D,time=time) 
         end if 
 
-        !if (mod(time,100.0)==0) then
-        !    write(*,"(a,f14.4)") "yelmo::       time = ", time
-        !end if 
+        if (mod(time,100.0)==0) then
+           write(*,"(a,f14.4)") "yelmo::       time = ", time
+        end if 
 
-        if (mod(time,1000.0)==0) then
+        if (mod(time,100.0)==0) then
             ! Write hysteresis summary 
-            write(*,"(a5,2f8.1,f15.3,2f5.1)") "tble", time, yelmo1%reg%V_ice_g*1e-6, yelmo1%reg%dVicedt*conv_km3_Gt, enh_out, cf_out 
+            call write_hyst_step(path_filehyst,time,yelmo1,hyst1,T_summer)
         end if 
 
         ! Update the timers for each timestep and output
@@ -502,6 +502,77 @@ contains
         return 
 
     end subroutine write_step_2D_combined
+
+    subroutine write_hyst_init(filename,time_init,ylmo)
+
+        implicit none 
+
+        character(len=*),  intent(IN) :: filename 
+        real(prec),        intent(IN) :: time_init 
+        type(yelmo_class), intent(IN) :: ylmo
+
+        ! Local variables 
+        real(prec) :: cf_out 
+
+        ! Initialize netcdf file and dimensions
+        call nc_create(filename)
+        call nc_write_dim(filename,"pt",  x=1,dx=1,nx=1,units="Point")
+        call nc_write_dim(filename,"time",x=time_init,dx=1.0_prec,nx=1,units="yr",unlimited=.TRUE.)
+
+        ! Define the parameters
+        call nc_write(filename,"enh_stream",ylmo%mat%par%enh_stream,units="-",long_name="Enhancement factor (stream)",dim1="pt")
+        call nc_write(filename,"enh_shear", ylmo%mat%par%enh_shear, units="-",long_name="Enhancement factor (shear)",dim1="pt")
+        
+        cf_out  = ylmo%dyn%par%cf_stream 
+        if (ylmo%dyn%par%mix_method .eq. -2) cf_out = 0.0 
+        call nc_write(filename,"cf_stream", cf_out, units="1e5 yr/m",long_name="Basal friction coefficient (stream)",dim1="pt")
+        call nc_write(filename,"cf_frozen", ylmo%dyn%par%cf_frozen, units="1e5 yr/m",long_name="Basal friction coefficient (frozen)",dim1="pt")
+        
+        call nc_write(filename,"gamma", ylmo%thrm%par%gamma, units="K",long_name="Temperate base distribution",dim1="pt")
+        
+        return 
+
+    end subroutine write_hyst_init 
+
+    subroutine write_hyst_step(filename,time,ylmo,hyst,T_summer)
+
+        implicit none 
+
+        character(len=*),   intent(IN) :: filename 
+        real(prec),         intent(IN) :: time
+        type(yelmo_class),  intent(IN) :: ylmo 
+        type(hyster_class), intent(IN) :: hyst 
+        real(prec),         intent(IN) :: T_summer  
+
+        ! Local variables
+        integer    :: ncid, n
+        real(prec) :: time_prev 
+        
+        ! Open the file for writing
+        call nc_open(filename,ncid,writable=.TRUE.)
+
+        ! Determine current writing time step 
+        n = nc_size(filename,"time",ncid)
+        call nc_read(filename,"time",time_prev,start=[n],count=[1],ncid=ncid) 
+        if (abs(time-time_prev).gt.1e-5) n = n+1 
+
+        ! Update the time step
+        call nc_write(filename,"time",time,dim1="time",start=[n],count=[1],ncid=ncid)
+
+        ! Update the variables
+        call nc_write(filename,"dT",T_summer,units="K",long_name="Temperature anomaly (summer)",dim1="time",start=[n],ncid=ncid)
+
+        call nc_write(filename,"V",ylmo%reg%V_ice*1e-6,units="1e6 km^3",long_name="Ice volume", &
+                      dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"dVdt",ylmo%reg%dVicedt*conv_km3_Gt,units="Gt/a",long_name="Rate volume change", &
+                      dim1="time",start=[n],ncid=ncid)
+
+        ! Close the netcdf file
+        call nc_close(ncid)
+
+        return 
+
+    end subroutine write_hyst_step 
 
 end program remboyelmo_driver
       
