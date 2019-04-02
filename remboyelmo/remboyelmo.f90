@@ -43,6 +43,9 @@ program remboyelmo_driver
     type(sediments_class)  :: sed1 
     type(geothermal_class) :: gthrm1
     
+    real(prec) :: var 
+    integer    :: n 
+
     write(*,*)
     write(*,*) "                         ===== Greenland simulation ====="
     write(*,*) "Atmosphere (temperature and precipitation): 2D energy-moisture balance model (REMBO)"
@@ -153,7 +156,19 @@ program remboyelmo_driver
 
     ! Determine total iterations [yr]
     nstep_max = time_end - time_init 
-  
+    
+    
+!     ! Testing hyster ======
+!     var = 0.0 
+!     do n = 1, 200
+!         time = time_init + n*dtt 
+!         var  = var + max(0.0,real(100-n,prec)*dtt)
+!         if (use_hyster) call hyster_calc_forcing(hyst1,time=time,var=var)
+!         write(*,*) "hyst: ", time, hyst1%dv_dt, hyst1%df_dt, hyst1%f_now 
+!     end do 
+
+!     stop 
+
     ! ### Run iterations ###
     do n_step = 1, nstep_max    ! in years
 
