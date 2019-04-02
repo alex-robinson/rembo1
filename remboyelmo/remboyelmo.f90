@@ -194,7 +194,7 @@ if (calc_transient_climate) then
             ! Update anomaly if needed 
             if (use_hyster) then
                 ! snapclim call using anomaly from the hyster package 
-                call hyster_calc_forcing(hyst1,time=time_init,var=yelmo1%reg%V_ice*conv_km3_Gt)
+                call hyster_calc_forcing(hyst1,time=time,var=yelmo1%reg%V_ice*conv_km3_Gt)
                 T_summer = hyst1%f_now 
             end if 
     
