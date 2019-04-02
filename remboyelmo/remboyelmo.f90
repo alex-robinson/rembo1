@@ -157,7 +157,7 @@ program remboyelmo_driver
     ! Determine total iterations [yr]
     nstep_max = time_end - time_init 
     
-    
+
 !     ! Testing hyster ======
 !     var = 0.0 
 !     do n = 1, 200
@@ -581,6 +581,11 @@ contains
         call nc_write(filename,"A",ylmo%reg%A_ice*1e-6,units="1e6 km^2",long_name="Ice area",dim1="time",start=[n],ncid=ncid)
         call nc_write(filename,"dVdt",ylmo%reg%dVicedt*conv_km3_Gt,units="Gt/a",long_name="Rate volume change",dim1="time",start=[n],ncid=ncid)
 
+        ! hyst information 
+        call nc_write(filename,"dv_dt",hyst%dv_dt,units="Gt/a",long_name="hyst: Rate volume change",dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"df_dt",hyst%df_dt,units="K/ 1e6 a",long_name="hyst: Rate temperature change",dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"f_now",hyst%f_now,units="K",long_name="hyst: temperature",dim1="time",start=[n],ncid=ncid)
+        
         ! Close the netcdf file
         call nc_close(ncid)
 
