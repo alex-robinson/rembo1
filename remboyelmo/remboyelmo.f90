@@ -24,7 +24,7 @@ program remboyelmo_driver
     logical    :: calc_transient_climate
     logical    :: use_hyster
     real(prec) :: T_summer 
-    
+
     ! REMBO variables
     integer :: n_step, nstep_max 
     double precision :: timer_start, timer_tot
@@ -226,7 +226,12 @@ end if
 
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)
-  
+    
+        if (use_hyster .and. hyst1%kill) then 
+            write(*,*) "hyster kill switch activated, f_now = ", hyst1%f_now 
+            stop 
+        end if 
+        
     end do 
 
 
