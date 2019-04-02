@@ -22,9 +22,9 @@ program remboyelmo_driver
     real(prec) :: time_init, time_end, time_equil, time
     real(prec) :: dtt, dt1D_out, dt2D_out    
     logical    :: calc_transient_climate
-
-    logical, parameter :: use_hyster = .FALSE. 
-
+    logical    :: use_hyster
+    real(prec) :: T_summer 
+    
     ! REMBO variables
     integer :: n_step, nstep_max 
     double precision :: timer_start, timer_tot
@@ -78,7 +78,9 @@ program remboyelmo_driver
     call nml_read(path_par,"control","dt1D_out",     dt1D_out)                  ! [yr] Frequency of 1D output 
     call nml_read(path_par,"control","dt2D_out",     dt2D_out)                  ! [yr] Frequency of 2D output 
     call nml_read(path_par,"control","transient",    calc_transient_climate)    ! Calculate transient climate? 
-
+    call nml_read(path_par,"control","use_hyster",   use_hyster)                ! use hysteresis module to make transient temp anomaly
+    call nml_read(path_par,"control","dT",           T_summer)                  ! [K] Summer temperature forcing anomaly
+    
     ! Get start time in seconds
     call cpu_time(timer_start) 
 
@@ -104,8 +106,15 @@ program remboyelmo_driver
     yelmo1%bnd%H_sed = sed1%now%H 
     yelmo1%bnd%H_w   = 0.0   ! use hydro_init_state later
 
+    ! Update anomaly if needed 
+    if (use_hyster) then
+        ! snapclim call using anomaly from the hyster package 
+        call hyster_calc_forcing(hyst1,time=time_init,var=yelmo1%reg%V_ice*conv_km3_Gt)
+        T_summer = hyst1%f_now 
+    end if 
+
     ! Update REMBO, with ice sheet topography    
-    call rembo_update(0,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
+    call rembo_update(0,real(T_summer,8),real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
             
     ! Update surface mass balance and surface temperature from REMBO
     yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
@@ -167,8 +176,15 @@ if (calc_transient_climate) then
         ! == CLIMATE (ATMOSPHERE AND OCEAN) ====================================
         if (mod(time,10.0)==0) then
             
+            ! Update anomaly if needed 
+            if (use_hyster) then
+                ! snapclim call using anomaly from the hyster package 
+                call hyster_calc_forcing(hyst1,time=time_init,var=yelmo1%reg%V_ice*conv_km3_Gt)
+                T_summer = hyst1%f_now 
+            end if 
+    
             ! call REMBO1     
-            call rembo_update(n_step,real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
+            call rembo_update(n_step,real(T_summer,8),real(yelmo1%tpo%now%z_srf,8),real(yelmo1%tpo%now%H_ice,8))
             
             ! Update surface mass balance and surface temperature from REMBO
             yelmo1%bnd%smb   = rembo_ann%smb    *conv_we_ie*1e-3       ! [mm we/a] => [m ie/a]
@@ -206,7 +222,6 @@ end if
         if (mod(time,1000.0)==0) then
             ! Write hysteresis summary 
             write(*,"(a5,2f8.1,f15.3,2f5.1)") "tble", time, yelmo1%reg%V_ice_g*1e-6, yelmo1%reg%dVicedt*conv_km3_Gt, enh_out, cf_out 
-            call flush() 
         end if 
 
         ! Update the timers for each timestep and output

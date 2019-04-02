@@ -39,7 +39,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(n_step,z_srf,H_ice)
+  subroutine rembo_update(n_step,dT_summer,z_srf,H_ice)
   
     use emb_global
     use emb_functions
@@ -51,6 +51,7 @@ contains
     real (8), parameter :: dx=dxs
     
     integer, intent(IN) :: n_step
+    real(8), intent(IN) :: dT_summer                 ! Summer temp anomaly [K]
     real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model
     real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model 
     
@@ -75,6 +76,9 @@ contains
     
     type(choices) :: now
 
+    ! Update summer temperature anomaly in program 
+    T_warming_in = dT_summer 
+    
     ! Kill program as needed (for fracs and other simulations)
     if ( kill .eq. 1 ) then
       write(*,*) "Kill switch activated, program finished."

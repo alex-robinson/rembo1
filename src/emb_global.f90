@@ -111,6 +111,10 @@ module emb_global
   real (8) :: T_warming_delay, T_trans_max, T_diff, dT_rate
   real (8) :: f_eem, f_hol, f_seas, f_glac 
 
+  ! Externally defined temperature anomaly for new deltaT approach 
+  ! (loaded in rembo_update)
+  real (8) :: T_warming_in 
+  
   ! (reinhard)
   real (8) :: tempamp
   
@@ -795,7 +799,7 @@ end module emb_global
     return
   
   end function get_year
-  
+
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  t i m i n g
   ! Author     :  Alex Robinson

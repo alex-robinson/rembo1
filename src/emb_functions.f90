@@ -841,7 +841,7 @@ module emb_functions
   !               summer warming = global warming
   !               winter warming = higher warming
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  function deltaT(day)
+  function deltaT_orig(day) result(deltaT)
     
     integer :: day
     real (8) :: deltaT, Twrmng, Tw, Tamp, Tmean
@@ -886,6 +886,41 @@ module emb_functions
       ! Add daily value from paleo if needed
       if ( day .gt. nk ) day = day - nk
       if ( boundary_forcing .gt. 0 ) deltaT = deltaT + Tanomaly(day)
+    end if
+    
+    return
+
+  end function deltaT_orig
+  
+  function deltaT(day) result(dT_out)
+    
+    integer  :: day
+    real (8) :: dT_out      ! Warming for the given day, or summer value
+
+    ! Local variables
+    real (8) :: T_summer  
+    real (8) :: Tw, Tamp, Tmean
+    real (8) :: step_frac
+    
+    ! Update T_summer with global forcing dT value 
+    T_summer = T_warming_in 
+    
+    Tw      = T_summer * T_wintfac     ! Default T_wintfac is 2 (winter 2x warmer than summer)
+    Tamp    = (Tw - T_summer) / 2.d0
+    Tmean   = (Tw + T_summer) / 2.d0
+    
+    if ( day .eq. 0 ) then  ! provide the global (Greenland summer) value
+      dT_out = T_summer  
+      
+      ! Add summer value from paleo if needed
+      if ( boundary_forcing .gt. 0 ) dT_out = dT_out + sum(forcing_now%dT(6:8)) / 3d0
+        
+    else                    ! provide the local Greenland day's warming
+      dT_out = Tmean + Tamp * dcos(2.d0*pi*(day-15)/day_year)
+       
+      ! Add daily value from paleo if needed
+      if ( day .gt. nk ) day = day - nk
+      if ( boundary_forcing .gt. 0 ) dT_out = dT_out + Tanomaly(day)
     end if
     
     return
