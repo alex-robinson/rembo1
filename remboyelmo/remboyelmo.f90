@@ -583,7 +583,7 @@ contains
 
         ! hyst information 
         call nc_write(filename,"dv_dt",hyst%dv_dt,units="Gt/a",long_name="hyst: Rate volume change",dim1="time",start=[n],ncid=ncid)
-        call nc_write(filename,"df_dt",hyst%df_dt,units="K/ 1e6 a",long_name="hyst: Rate temperature change",dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"df_dt",hyst%df_dt,units="K/ a",long_name="hyst: Rate temperature change",dim1="time",start=[n],ncid=ncid)
         call nc_write(filename,"f_now",hyst%f_now,units="K",long_name="hyst: temperature",dim1="time",start=[n],ncid=ncid)
         
         ! Close the netcdf file
