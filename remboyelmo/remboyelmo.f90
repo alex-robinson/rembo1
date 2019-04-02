@@ -562,10 +562,9 @@ contains
         ! Update the variables
         call nc_write(filename,"dT",T_summer,units="K",long_name="Temperature anomaly (summer)",dim1="time",start=[n],ncid=ncid)
 
-        call nc_write(filename,"V",ylmo%reg%V_ice*1e-6,units="1e6 km^3",long_name="Ice volume", &
-                      dim1="time",start=[n],ncid=ncid)
-        call nc_write(filename,"dVdt",ylmo%reg%dVicedt*conv_km3_Gt,units="Gt/a",long_name="Rate volume change", &
-                      dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"V",ylmo%reg%V_ice*1e-6,units="1e6 km^3",long_name="Ice volume",dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"A",ylmo%reg%A_ice*1e-6,units="1e6 km^2",long_name="Ice area",dim1="time",start=[n],ncid=ncid)
+        call nc_write(filename,"dVdt",ylmo%reg%dVicedt*conv_km3_Gt,units="Gt/a",long_name="Rate volume change",dim1="time",start=[n],ncid=ncid)
 
         ! Close the netcdf file
         call nc_close(ncid)
