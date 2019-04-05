@@ -62,7 +62,7 @@
 
 &ydyn
     solver            = "hybrid-vel"    ! "fixed","hybrid-vel", "hybrid-shear", "hybrid-pd12"
-    mix_method        = -2              ! -2: sia, -1: ssa, 0: sia|ssa, 1: sia+ssa 2: ssa vel. fraction
+    mix_method        = 1               ! -2: sia, -1: ssa, 0: sia|ssa, 1: sia+ssa 2: ssa vel. fraction
     calc_diffusivity  = False           ! Calculate 2D diffusivity term for diagnostics
     m_drag            = 1.0             ! Dragging law exponent 
     beta_max          = 1e5             ! [Pa a m-1] Maximum value of beta for which ssa should be calculated 
@@ -93,7 +93,7 @@
     visc_min                = 1e3 
     use_2D_enh              = False 
     enh_shear               = 3.0
-    enh_stream              = 1.0
+    enh_stream              = 3.0
     enh_shlf                = 0.7
 
     age_method              = "None"    ! "None", "expl", "impl"
