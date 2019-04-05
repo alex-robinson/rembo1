@@ -24,6 +24,7 @@ program remboyelmo_driver
     logical    :: calc_transient_climate
     logical    :: use_hyster
     real(prec) :: T_summer 
+    real(prec) :: T_summer_in 
 
     ! REMBO variables
     integer :: n_step, nstep_max 
@@ -80,6 +81,11 @@ program remboyelmo_driver
     call nml_read(path_par,"control","use_hyster",   use_hyster)                ! use hysteresis module to make transient temp anomaly
     call nml_read(path_par,"control","dT",           T_summer)                  ! [K] Summer temperature forcing anomaly
     
+    ! Store T_summer for use in transient loop, but equilibrate without anomaly,
+    ! when use_hyster=False 
+    T_summer_in = T_summer 
+    T_summer    = 0.0 
+
     ! Get start time in seconds
     call cpu_time(timer_start) 
 
@@ -105,7 +111,7 @@ program remboyelmo_driver
     yelmo1%bnd%H_sed = sed1%now%H 
     yelmo1%bnd%H_w   = 0.0   ! use hydro_init_state later
 
-    ! Update anomaly if needed 
+    ! Update anomaly using hyster module if needed 
     if (use_hyster) then
         ! snapclim call using anomaly from the hyster package 
         call hyster_calc_forcing(hyst1,time=time_init,var=yelmo1%reg%V_ice*conv_km3_Gt)
@@ -157,7 +163,6 @@ program remboyelmo_driver
     ! Determine total iterations [yr]
     nstep_max = time_end - time_init 
     
-
 !     ! Testing hyster ======
 !     var = 0.0 
 !     do n = 1, 200
@@ -168,7 +173,12 @@ program remboyelmo_driver
 !     end do 
 
 !     stop 
-
+    
+    ! Reactivate T_summer (if not using hyster)
+    if (.not. use_hyster) then 
+        T_summer = T_summer_in 
+    end if 
+    
     ! ### Run iterations ###
     do n_step = 1, nstep_max    ! in years
 
