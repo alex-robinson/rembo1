@@ -206,13 +206,13 @@ if (calc_transient_climate) then
             else     
                 ! Reactivate T_summer after n_years (if not using hyster)
                 
-                if (time .lt. 10.0e3) then 
+                if (time .lt. 20.0e3) then 
                     ! No warming initially
                     T_summer = 0.0 
-                else if (time .ge. 10.0e3 .and. time .le. 10.5e3) then 
-                    ! Between 10 and 10.5 ka, scale warming linearly 
-                    T_summer = T_summer_in*(time-10.0e3)/(10.5e3-10.0e3)
-                else if (time .gt. 10.5e3) then 
+                else if (time .ge. 20.0e3 .and. time .le. 20.5e3) then 
+                    ! Between 20 and 20.5 ka, scale warming linearly 
+                    T_summer = T_summer_in*(time-20.0e3)/(20.5e3-20.0e3)
+                else if (time .gt. 20.5e3) then 
                     T_summer = T_summer_in 
                 end if 
 
@@ -273,7 +273,7 @@ end if
         end if 
         
         ! Another kill switch based on volume 
-        if (.not. use_hyster .and. (time .gt. 30e3 .and. abs(hyst1%dv_dt) .lt. 0.1)) then 
+        if (.not. use_hyster .and. (time .gt. 50e3 .and. abs(hyst1%dv_dt) .lt. 0.1)) then 
 
             write(*,*) "Volume kill switch activated."
             write(*,*) "V_ice   = ", yelmo1%reg%V_ice*1e-6
