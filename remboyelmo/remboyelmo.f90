@@ -174,11 +174,6 @@ program remboyelmo_driver
 
 !     stop 
     
-    ! Reactivate T_summer (if not using hyster)
-    if (.not. use_hyster) then 
-        T_summer = T_summer_in 
-    end if 
-    
     ! ### Run iterations ###
     do n_step = 1, nstep_max    ! in years
 
@@ -206,6 +201,21 @@ if (calc_transient_climate) then
                 ! snapclim call using anomaly from the hyster package 
                 call hyster_calc_forcing(hyst1,time=time,var=yelmo1%reg%V_ice*conv_km3_Gt)
                 T_summer = hyst1%f_now 
+            else     
+                ! Reactivate T_summer after n_years (if not using hyster)
+                
+                if (time .lt. 10.0e3) then 
+                    ! No warming initially
+                    T_summer = 0.0 
+                if (time .ge. 10.0e3 .and. time .le. 10.5e3) then 
+                    ! Between 10 and 10.5 ka, scale warming linearly 
+                    T_summer = T_summer_in*(time-10.0e3)/(10.5e3-10.0e3)
+                else if (time .gt. 10.5e3) then 
+                    T_summer = T_summer_in 
+                end if 
+
+            end if 
+    
             end if 
     
             ! call REMBO1     
@@ -265,7 +275,7 @@ end if
             write(*,*) "V_ice   = ", yelmo1%reg%V_ice*1e-6
             write(*,*) "dVicedt = ", yelmo1%reg%dVicedt*conv_km3_Gt
             stop 
-            
+
         end if 
 
     end do 
