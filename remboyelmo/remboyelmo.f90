@@ -257,6 +257,17 @@ end if
             stop 
         end if 
         
+        ! Another kill switch based on volume 
+        if (yelmo1%reg%V_ice*1e-6 .lt. 1.0 .and. &
+            abs(yelmo1%reg%dVicedt*conv_km3_Gt) .lt. 10.0) then 
+
+            write(*,*) "Volume kill switch activated."
+            write(*,*) "V_ice   = ", yelmo1%reg%V_ice*1e-6
+            write(*,*) "dVicedt = ", yelmo1%reg%dVicedt*conv_km3_Gt
+            stop 
+            
+        end if 
+
     end do 
 
 
