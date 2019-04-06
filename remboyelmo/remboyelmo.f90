@@ -86,6 +86,8 @@ program remboyelmo_driver
     T_summer_in = T_summer 
     T_summer    = 0.0 
 
+    write(*,*) "T_summer: ", T_summer_in, T_summer 
+
     ! Get start time in seconds
     call cpu_time(timer_start) 
 
@@ -207,15 +209,13 @@ if (calc_transient_climate) then
                 if (time .lt. 10.0e3) then 
                     ! No warming initially
                     T_summer = 0.0 
-                if (time .ge. 10.0e3 .and. time .le. 10.5e3) then 
+                else if (time .ge. 10.0e3 .and. time .le. 10.5e3) then 
                     ! Between 10 and 10.5 ka, scale warming linearly 
                     T_summer = T_summer_in*(time-10.0e3)/(10.5e3-10.0e3)
                 else if (time .gt. 10.5e3) then 
                     T_summer = T_summer_in 
                 end if 
 
-            end if 
-    
             end if 
     
             ! call REMBO1     
