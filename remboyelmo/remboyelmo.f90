@@ -273,7 +273,7 @@ end if
         end if 
         
         ! Another kill switch based on volume 
-        if (time .gt. 30e3 .and. abs(hyst1%dv_dt) .lt. 0.1) then 
+        if (.not. use_hyster .and. (time .gt. 30e3 .and. abs(hyst1%dv_dt) .lt. 0.1)) then 
 
             write(*,*) "Volume kill switch activated."
             write(*,*) "V_ice   = ", yelmo1%reg%V_ice*1e-6
