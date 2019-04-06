@@ -200,7 +200,7 @@ if (calc_transient_climate) then
             
             ! Update anomaly if needed 
             if (use_hyster) then
-                ! snapclim call using anomaly from the hyster package 
+                ! Calculate hyster forcing
                 call hyster_calc_forcing(hyst1,time=time,var=yelmo1%reg%V_ice*conv_km3_Gt)
                 T_summer = hyst1%f_now 
             else     
@@ -215,6 +215,11 @@ if (calc_transient_climate) then
                 else if (time .gt. 10.5e3) then 
                     T_summer = T_summer_in 
                 end if 
+
+                ! Calculate hyster forcing, just to get running average of dv_dt
+                ! reset hyst1%f_now to avoid activating kill switch
+                call hyster_calc_forcing(hyst1,time=time,var=yelmo1%reg%V_ice*conv_km3_Gt)
+                hyst1%f_now = hyst1%par%f_min 
 
             end if 
     
@@ -268,12 +273,12 @@ end if
         end if 
         
         ! Another kill switch based on volume 
-        if (yelmo1%reg%V_ice*1e-6 .lt. 1.0 .and. &
-            abs(yelmo1%reg%dVicedt*conv_km3_Gt) .lt. 10.0) then 
+        if (time .gt. 30e3 .and. abs(hyst1%dv_dt) .lt. 0.1) then 
 
             write(*,*) "Volume kill switch activated."
             write(*,*) "V_ice   = ", yelmo1%reg%V_ice*1e-6
             write(*,*) "dVicedt = ", yelmo1%reg%dVicedt*conv_km3_Gt
+            write(*,*) "dv_dt   = ", hyst1%dv_dt 
             stop 
 
         end if 
