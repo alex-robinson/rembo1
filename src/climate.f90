@@ -322,12 +322,12 @@ contains
     call cpu_time(timer%now)                   ! get current time in seconds
     timer%climate = (timer%now-timer%climate)  ! Get elapsed time in seconds
     
-    if ( clim_coupled .eq. 1 .and. (now%smb .or. now%clim) ) then
-      call vars2ice(saved%tt,saved%tdjf,saved%tjja,saved%ttp,saved%tts, &
-                    saved%tjan, saved%tjul,saved%precip,saved%snow, &
-                    saved%runoff_snow,saved%runoff_rain,saved%melted_ice, &
-                    saved%refrozen,saved%evap,saved%smb,saved%h_snow, "save")
-    end if
+!     if ( clim_coupled .eq. 1 .and. (now%smb .or. now%clim) ) then
+!       call vars2ice(saved%tt,saved%tdjf,saved%tjja,saved%ttp,saved%tts, &
+!                     saved%tjan, saved%tjul,saved%precip,saved%snow, &
+!                     saved%runoff_snow,saved%runoff_rain,saved%melted_ice, &
+!                     saved%refrozen,saved%evap,saved%smb,saved%h_snow, "save")
+!     end if
     
     ! ================================================
     ! remboyelmo 
