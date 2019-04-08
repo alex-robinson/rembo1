@@ -362,7 +362,7 @@ def jobscript_slurm(cmd,rundir,username,usergroup,qos,wtime,useremail):
 # Run the job
 {} 
 
-""".format(qos,wtime,jobname,usergroup,useremail,wtime,cmd)
+""".format(qos,wtime,jobname,usergroup,useremail,cmd)
 
     return script
 
