@@ -28,6 +28,8 @@ test = librembo/bin/rembo_test.x
         help='Run the executable after preparing the job?')
     parser.add_argument('-s','--submit',action="store_true",
         help='Run the executable after preparing the job by submitting to the queue?')
+    parser.add_argument('-q','--qos',type=str, default='short',
+        help='Name of the qos the job should be submitted to (priority,short,medium,long)')
     parser.add_argument('-w','--wall', type=int, default=12,
         help='Maximum wall time to allow for job (only for jobs submitted to queue)')
     parser.add_argument('--email', type=str, default='None',
@@ -54,6 +56,7 @@ test = librembo/bin/rembo_test.x
     exe_path    = args.exe       # Path relative to current working directory (cwd)
     run         = args.run 
     submit      = args.submit 
+    qos         = args.qos  
     wtime       = args.wall 
     useremail   = args.email 
     usergroup   = args.group
@@ -190,7 +193,7 @@ test = librembo/bin/rembo_test.x
 
         if submit:
             # Submit job to queue 
-            pid = submitjob(rundir,executable,par_fname,wtime,usergroup,useremail) 
+            pid = submitjob(rundir,executable,par_fname,qos,wtime,usergroup,useremail) 
 
         else:
             # Run job in background 
@@ -223,7 +226,7 @@ def runjob(rundir,executable,par_path):
 
     return pid 
 
-def submitjob(rundir,executable,par_path,wtime,usergroup,useremail):
+def submitjob(rundir,executable,par_path,qos,wtime,usergroup,useremail):
     '''Submit a job to a HPC queue (qsub,sbatch)'''
 
     # Get info about current system
@@ -243,7 +246,7 @@ def submitjob(rundir,executable,par_path,wtime,usergroup,useremail):
         cmd_job = "cd {} && qsub {}".format(rundir,nm_jobscript)
         
     else:
-        script  = jobscript_slurm(cmd,rundir,username,usergroup,wtime,useremail)
+        script  = jobscript_slurm(cmd,rundir,username,usergroup,qos,wtime,useremail)
         jobfile = open(path_jobscript,'w').write(script)
         cmd_job = "cd {} && sbatch {}".format(rundir,nm_jobscript)
     
@@ -325,7 +328,7 @@ def autofolder(params,outfldr0):
 
     return outfldr
 
-def jobscript_slurm(cmd,rundir,username,usergroup,wtime,useremail):
+def jobscript_slurm(cmd,rundir,username,usergroup,qos,wtime,useremail):
     '''Definition of the job script'''
 
     jobname = "rembo" 
@@ -334,9 +337,19 @@ def jobscript_slurm(cmd,rundir,username,usergroup,wtime,useremail):
 # Extra parameter options
 ##SBATCH --partition=ram_gpu
 ##SBATCH --mem=50000 
+    
+    # Check that wtime is consistent with qos
+    if qos in ["priority","short"] and wtime > 24:
+        print("Error in wtime for '{}'' queue, wtime = {}".format(qos,wtime))
+        sys.exit()
 
+    if qos == "medium" and wtime > 24*7:
+        print("Error in wtime for '{}'' queue, wtime = {}".format(qos,wtime))
+        sys.exit()
+            
     script = """#! /bin/bash
-#SBATCH --qos=short
+#SBATCH --qos={}
+#SBATCH --time={}:00:00
 #SBATCH --job-name={}
 #SBATCH --account={}
 #SBATCH --mail-user={}
@@ -345,12 +358,11 @@ def jobscript_slurm(cmd,rundir,username,usergroup,wtime,useremail):
 #SBATCH --mail-type=REQUEUE
 #SBATCH --output=./out.out
 #SBATCH --error=./out.err
-#SBATCH --time={}:00:00
 
 # Run the job
 {} 
 
-""".format(jobname,usergroup,useremail,wtime,cmd)
+""".format(qos,wtime,jobname,usergroup,useremail,wtime,cmd)
 
     return script
 
