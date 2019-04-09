@@ -332,8 +332,7 @@ def jobscript_slurm(cmd,rundir,username,usergroup,qos,wtime,useremail):
     '''Definition of the job script'''
 
     jobname = "rembo" 
-    # jobname = "rembo_{}".format(rundir)
-
+    
 # Extra parameter options
 ##SBATCH --partition=ram_gpu
 ##SBATCH --mem=50000 
