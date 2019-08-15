@@ -68,7 +68,7 @@ program remboyelmo_driver
     conv_km3_Gt = rho_ice *1e-3
 
     ! Initialize data objects
-    call yelmo_init(yelmo1,filename=path_par)
+    call yelmo_init(yelmo1,filename=path_par,grid_def="file",time=time_init)
     
     ! Load control parameters (timing, etc)
     call nml_read(path_par,"control","time_init",    time_init)                 ! [yr] Starting time
@@ -95,9 +95,6 @@ program remboyelmo_driver
     call rembo_init()
     call timing(0,timer_start,timer_tot)
 
-    ! Initialize state variables (topo only)
-    call yelmo_init_state_1(yelmo1,path_par,time=time_init)
-    
     ! Initialize all Yelmo helping modules 
     call initialize_yelmo_externals(sealev,hyst1,isos1,mshlf1,hyd1,sed1,gthrm1,yelmo1,path_par)
 
@@ -144,8 +141,8 @@ program remboyelmo_driver
 
     ! Initialize state variables (dyn,therm,mat)
     ! (initialize temps with robin method with a cold base)
-    call yelmo_init_state_2(yelmo1,path_par,time=time_init,thrm_method="robin-cold")
-
+    call yelmo_init_state(yelmo1,path_par,time=time_init,thrm_method="robin-cold")
+    
     ! Run yelmo for several years with constant boundary conditions and topo
     ! to equilibrate thermodynamics and dynamics
     call yelmo_update_equil(yelmo1,time,time_tot=time_equil,topo_fixed=.FALSE.,dt=1.0,ssa_vel_max=500.0)
