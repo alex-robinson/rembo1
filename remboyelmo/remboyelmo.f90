@@ -2,7 +2,6 @@ program remboyelmo_driver
 
     use ncio 
     use nml 
-    use coord 
 
     !use emb_global
     use rembo_sclimate 
@@ -295,30 +294,30 @@ contains
         character(len=*)       :: path_par  
 
         ! Local variables 
-        type(grid_class)       :: grd 
+        type(ygrid_class)      :: grd 
         character(len=256)     :: domain 
 
         ! === Initialize external models (forcing for ice sheet) ======
 
         ! Store yelmo grid in grd and domain name as a shortcut 
-        grd  = ylmo%grd 
+        grd    = ylmo%grd 
         domain = ylmo%par%domain 
 
         ! Initialize global sea level model (bnd%z_sl)
         call sealevel_init(sealev,path_par)
 
         ! Initialize bedrock model 
-        call isos_init(isos,path_par,grd%G%nx,grd%G%ny,real(grd%G%dx*grd%xy_conv))
+        call isos_init(isos,path_par,grd%nx,grd%ny,grd%dx)
 
         ! Initialize hysteresis module for transient forcing experiments 
         call hyster_init(hyst,path_par,time_init) 
         
         ! Initialize marine melt model (bnd%bmb_shlf)
-        call marshelf_init(mshlf,path_par,grd%G%nx,grd%G%ny,domain,grd%name,ylmo%bnd%basins)
+        call marshelf_init(mshlf,path_par,grd%nx,grd%ny,domain,grd%name,ylmo%bnd%basins)
         
         ! Load other constant boundary variables (bnd%H_sed, bnd%Q_geo)
-        call sediments_init(sed,path_par,grd%G%nx,grd%G%ny,domain,grd%name)
-        call geothermal_init(gthrm,path_par,grd%G%nx,grd%G%ny,domain,grd%name)
+        call sediments_init(sed,path_par,grd%nx,grd%ny,domain,grd%name)
+        call geothermal_init(gthrm,path_par,grd%nx,grd%ny,domain,grd%name)
 
         return 
 
