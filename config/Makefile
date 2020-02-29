@@ -88,7 +88,22 @@ rylib_libs = 	$(objdir)/sealevel.o \
 
 # MAIN PROGRAMS ####
 
-rembo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
+# Static library compilation
+rembo-static: $(rembo_libs) $(rembo_base)
+	ar rc $(objdir)/librembo.a $(rembo_libs) $(rembo_base)
+	ranlib $(objdir)/librembo.a
+	@echo " "
+	@echo "    $(objdir)/librembo.a is ready."
+	@echo " "
+
+rembo: rembo-static
+	$(FC) $(DFLAGS) $(FFLAGS) $(INC_REMBO) -o librembo/bin/rembo.x \
+		$(srcdir)/standalone_main.f90 $(LIB_REMBO) $(LFLAGS)
+	@echo " "
+	@echo "    librembo/bin/rembo.x is ready."
+	@echo " "
+
+rembo0: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
        $(rembo_base) $(srcdir)/standalone_main.f90
 	$(FC) $(DFLAGS) $(FFLAGS) -o librembo/bin/rembo.x $^ $(LFLAGS)
 	@echo " "
