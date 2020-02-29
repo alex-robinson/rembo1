@@ -97,17 +97,10 @@ rembo-static: $(rembo_libs) $(rembo_base)
 	@echo " "
 
 rembo: rembo-static
-	$(FC) $(DFLAGS) $(FFLAGS) $(INC_REMBO) -o librembo/bin/rembo.x \
-		$(srcdir)/standalone_main.f90 $(LIB_REMBO) $(LFLAGS)
+	$(FC) $(DFLAGS) $(FFLAGS) $(INC_REMBO) -o librembo/bin/test_rembo.x \
+		test_rembo.f90 $(LIB_REMBO) $(LFLAGS)
 	@echo " "
-	@echo "    librembo/bin/rembo.x is ready."
-	@echo " "
-
-rembo0: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
-       $(rembo_base) $(srcdir)/standalone_main.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -o librembo/bin/rembo.x $^ $(LFLAGS)
-	@echo " "
-	@echo "    librembo/bin/rembo.x is ready."
+	@echo "    librembo/bin/test_rembo.x is ready."
 	@echo " "
 
 # Compile the static library libyelmo,

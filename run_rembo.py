@@ -79,7 +79,7 @@ test = librembo/bin/rembo_test.x
 
     # Expand executable path shortcut if defined
     if exe_path == "rembo":
-        exe_path   = "librembo/bin/rembo.x" 
+        exe_path   = "librembo/bin/test_rembo.x" 
         with_yelmo = False
     elif exe_path == "remboyelmo":
         exe_path   = "librembo/bin/remboyelmo.x"
