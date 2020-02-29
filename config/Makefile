@@ -103,9 +103,9 @@ yelmo-static:
 remboyelmo_step1: 
 	-rm librembo/bin/remboyelmo.x 
 
-remboyelmo_step2: yelmo-static $(rembo_libs) $(rylib_libs) $(rembo_base) remboyelmo/remboyelmo.f90
+remboyelmo_step2: yelmo-static $(rylib_libs) $(rembo_libs) $(rembo_base) remboyelmo/remboyelmo.f90
 	$(FC) $(DFLAGS) $(FFLAGS) $(INC_LIS) $(INC_YELMO) -o librembo/bin/remboyelmo.x \
-			$(rembo_libs) $(rylib_libs) $(rembo_base) remboyelmo/remboyelmo.f90 $(LFLAGS)
+			$(rylib_libs) $(rembo_libs) $(rembo_base) remboyelmo/remboyelmo.f90 $(LFLAGS)
 	@echo " "
 	@echo "    librembo/bin/remboyelmo.x is ready."
 	@echo " "

@@ -22,7 +22,8 @@ $(objdir)/smb_itm.o : $(srcdir)/smb_itm.f90 $(objdir)/emb_global.o $(objdir)/emb
 $(objdir)/rembo_main.o : $(srcdir)/rembo_main.f90 $(objdir)/rembo_functions.o $(objdir)/emb_global.o \
 $(objdir)/emb_functions.o $(objdir)/emb_pdesolver.o $(objdir)/projector.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-$(objdir)/climate.o : $(srcdir)/climate.f90 $(objdir)/emb_global.o $(objdir)/emb_functions.o $(objdir)/rembo_main.o 
+$(objdir)/climate.o : $(srcdir)/climate.f90 $(objdir)/emb_global.o $(objdir)/emb_functions.o \
+ 							$(objdir)/rembo_main.o 
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 
 $(objdir)/sinsol_orbit.o : $(srcdir)/sinsol_orbit.f
@@ -45,7 +46,6 @@ rembo_base =           $(objdir)/exchange.o \
 					   $(objdir)/rembo_functions.o \
 					   $(objdir)/smb_itm.o \
 					   $(objdir)/rembo_main.o \
-					   $(objdir)/emb_functions.o \
 					   $(objdir)/climate.o \
 					   $(objdir)/sinsol_orbit.o
 
