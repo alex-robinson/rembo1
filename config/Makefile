@@ -2,11 +2,12 @@
 .SHELL: /bin/sh
 
 # PATH options
-srcdir = src
-objdir = librembo/include
-bindir = librembo/bin
-libdir = libs
-testdir = tests
+srcdir   = src
+objdir   = librembo/include
+bindir   = librembo/bin
+libdir   = libs
+rylibdir = remboyelmo/libs
+testdir  = tests
 
 # Command-line options at make call
 debug ?= 0
@@ -48,6 +49,37 @@ $(objdir)/ncio_transpose.o : $(libdir)/ncio_transpose.f90 $(objdir)/ncio.o
 $(objdir)/interp1D.o : $(libdir)/interp1D.f90
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 
+rembo_libs = 	$(objdir)/nml.o \
+				$(objdir)/ncio.o \
+				$(objdir)/ncio_transpose.o \
+				$(objdir)/interp1D.o
+
+# REMBOYELMO LIB RULES ####
+$(objdir)/sealevel.o : $(rylibdir)/sealevel.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+
+$(objdir)/hyster.o : $(rylibdir)/hyster.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+		
+$(objdir)/geothermal.o : $(rylibdir)/geothermal.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+
+$(objdir)/marine_shelf.o : $(rylibdir)/marine_shelf.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+
+$(objdir)/sediments.o : $(rylibdir)/sediments.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+				
+$(objdir)/isostasy.o: $(rylibdir)/isos/isostasy.f90 $(objdir)/nml.o
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+
+rylib_libs = 	$(objdir)/sealevel.o \
+				$(objdir)/hyster.o \
+				$(objdir)/geothermal.o \
+				$(objdir)/marine_shelf.o \
+				$(objdir)/sediments.o \
+				$(objdir)/isostasy.o
+
 ###############################################
 ##
 ## Compilation of complete programs
@@ -63,79 +95,25 @@ rembo: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/int
 	@echo "    librembo/bin/rembo.x is ready."
 	@echo " "
 
+# Compile the static library libyelmo,
+# using Makefile located in $(YELMOROOT) directory 
+yelmo-static: 
+		$(MAKE) -C $(YELMOROOT) yelmo-static 
+
 remboyelmo_step1: 
 	-rm librembo/bin/remboyelmo.x 
 
-remboyelmo_step2: $(objdir)/nml.o $(objdir)/ncio.o $(objdir)/ncio_transpose.o $(objdir)/interp1D.o \
-       $(rembo_base) remboyelmo/remboyelmo.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -o librembo/bin/remboyelmo.x $^ $(LFLAGS)
+remboyelmo_step2: yelmo-static $(rembo_libs) $(rylib_libs) $(rembo_base) remboyelmo/remboyelmo.f90
+	$(FC) $(DFLAGS) $(FFLAGS) $(INC_LIS) $(INC_YELMO) -o librembo/bin/remboyelmo.x \
+			$(rembo_libs) $(rylib_libs) $(rembo_base) remboyelmo/remboyelmo.f90 $(LFLAGS)
 	@echo " "
 	@echo "    librembo/bin/remboyelmo.x is ready."
 	@echo " "
 
 remboyelmo: remboyelmo_step1 remboyelmo_step2
 
-# Static libraries 
-yelmo-static: $(yelmo_libs) $(yelmo_physics) $(yelmo_base) $(yelmo_tests)
-	ar rc $(objdir)/libyelmo.a $(yelmo_libs) $(yelmo_physics) $(yelmo_base) $(yelmo_tests)
-	ranlib $(objdir)/libyelmo.a
-	@echo " "
-	@echo "    $(objdir)/libyelmo.a is ready."
-	@echo " "
-
-yelmo_test : yelmo-static
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_test.x yelmo_test.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o
-		@echo " "
-		@echo "    yelmo_test.x is ready."
-		@echo " "
-
-yelmo_benchmarks : yelmo-static
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_benchmarks.x tests/yelmo_benchmarks.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o
-		@echo " "
-		@echo "    yelmo_benchmarks.x is ready."
-		@echo " "
-
-yelmo_halfarmed : yelmo-static
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_halfarmed.x tests/yelmo_halfarmed.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o
-		@echo " "
-		@echo "    yelmo_halfarmed.x is ready."
-		@echo " "
-
-yelmo_mismip : yelmo-static
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_mismip.x tests/yelmo_mismip.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o
-		@echo " "
-		@echo "    yelmo_mismip.x is ready."
-		@echo " "
-
-yelmo_stommel : yelmo-static $(objdir)/stommel.o
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_stommel.x yelmo_stommel.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o $(objdir)/stommel.o
-		@echo " "
-		@echo "    yelmo_stommel.x is ready."
-		@echo " "
-
-yelmo_optbeta : yelmo-static
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/yelmo_optbeta.x yelmo_optbeta.f90 \
-			-L${CURDIR}/libyelmo/include -lyelmo $(LFLAGS) $(objdir)/nml.o
-		@echo " "
-		@echo "    yelmo_optbeta.x is ready."
-		@echo " "
-
-test_icetemp : $(yelmo_thermo)
-		$(FC) $(DLAGS) $(FFLAGS) $(INC_COORD) $(INC_LIS) -o $(bindir)/test_icetemp.x tests/test_icetemp.f90 \
-			$(LFLAGS) $(yelmo_thermo) $(objdir)/nml.o
-		@echo " "
-		@echo "    test_icetemp.x is ready."
-		@echo " "
-
-check: $(yelmo_libs) $(yelmo_tests)
-	@echo $(yelmo_libs)
-	@echo $(yelmo_tests)
-	@echo ""
+check: 
+		@echo $(rylib_libs)
 
 # NOTE: eventually ncio should be extracted from all external libraries (like coord?), and then
 # all external libraries should be linked by adding them to the end of the program compilation 
@@ -146,7 +124,7 @@ usage:
 	@echo ""
 	@echo "    * USAGE * "
 	@echo ""
-	@echo " make yelmo : compiles test_yelmo.x, yelmo on a given domain."
+	@echo " make remboyelmo : compiles remboyelmo.x, coupled rembo-yelmo model."
 	@echo " make clean     : cleans object files"
 	@echo ""
 

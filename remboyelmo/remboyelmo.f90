@@ -8,8 +8,7 @@ program remboyelmo_driver
     use sealevel 
     use isostasy  
     
-    use marine_shelf   
-    use basal_hydrology 
+    use marine_shelf    
     use sediments 
     use geothermal
     
@@ -40,7 +39,6 @@ program remboyelmo_driver
     type(hyster_class)     :: hyst1   
     type(isos_class)       :: isos1
     type(marshelf_class)   :: mshlf1
-    type(hydro_class)      :: hyd1 
     type(sediments_class)  :: sed1 
     type(geothermal_class) :: gthrm1
     
@@ -96,7 +94,7 @@ program remboyelmo_driver
     call timing(0,timer_start,timer_tot)
 
     ! Initialize all Yelmo helping modules 
-    call initialize_yelmo_externals(sealev,hyst1,isos1,mshlf1,hyd1,sed1,gthrm1,yelmo1,path_par)
+    call initialize_yelmo_externals(sealev,hyst1,isos1,mshlf1,sed1,gthrm1,yelmo1,path_par)
 
     ! === Update initial boundary conditions for current time and yelmo state =====
     ! ybound: z_bed, z_sl, H_sed, H_w, smb, T_srf, bmb_shlf , Q_geo
@@ -107,8 +105,7 @@ program remboyelmo_driver
     call sealevel_update(sealev,year_bp=time_init)
 
     yelmo1%bnd%z_sl  = sealev%z_sl 
-    yelmo1%bnd%H_sed = sed1%now%H 
-    yelmo1%bnd%H_w   = 0.0   ! use hydro_init_state later
+    yelmo1%bnd%H_sed = sed1%now%H
 
     ! Update anomaly using hyster module if needed 
     if (use_hyster) then
@@ -128,7 +125,7 @@ program remboyelmo_driver
     call marshelf_set_Tshlf(mshlf1,to_ann=273.15,dto_ann=0.0)
 
     call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
-                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grid%G%dx,prec))
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%G%dx,prec))
 
     yelmo1%bnd%bmb_shlf = mshlf1%now%bmb_shlf  
     yelmo1%bnd%T_shlf   = mshlf1%now%T_shlf  
@@ -149,7 +146,7 @@ program remboyelmo_driver
     
     ! 2D file 
     call yelmo_write_init(yelmo1,path_file2D,time_init=time,units="years")
-    call write_step_2D_combined(yelmo1,isos1,mshlf1,hyd1,path_file2D,time=time)
+    call write_step_2D_combined(yelmo1,isos1,mshlf1,path_file2D,time=time)
     
     ! 1D file 
     call write_yreg_init(yelmo1,path_file1D,time_init=time_init,units="years",mask=yelmo1%bnd%ice_allowed)
@@ -232,20 +229,15 @@ if (calc_transient_climate) then
 !         ! == MARINE AND TOTAL BASAL MASS BALANCE ===============================
         
         call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
-                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grid%G%dx,prec))
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%G%dx,prec))
 
 end if 
         
         yelmo1%bnd%bmb_shlf = mshlf1%now%bmb_shlf  
         yelmo1%bnd%T_shlf   = mshlf1%now%T_shlf  
 
-        ! == BASAL HYDROLOGY ====================================================
-        call hydro_update(hyd1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%z_srf,yelmo1%bnd%z_sl, &
-                          yelmo1%tpo%now%bmb,yelmo1%tpo%now%f_grnd,yelmo1%tpo%par%dx,yelmo1%tpo%par%dx,time)
-        yelmo1%bnd%H_w   = hyd1%now%H_water 
-
         if (mod(time,dt2D_out)==0) then 
-            call write_step_2D_combined(yelmo1,isos1,mshlf1,hyd1,path_file2D,time=time)
+            call write_step_2D_combined(yelmo1,isos1,mshlf1,path_file2D,time=time)
         end if 
 
         if (mod(time,dt1D_out)==0) then 
@@ -285,15 +277,14 @@ end if
 
 contains 
 
-    subroutine initialize_yelmo_externals(sealev,hyst,isos,mshlf,hyd,sed,gthrm,ylmo,path_par)
+    subroutine initialize_yelmo_externals(sealev,hyst,isos,mshlf,sed,gthrm,ylmo,path_par)
 
         implicit none 
 
         type(sealevel_class)   :: sealev
         type(hyster_class)     :: hyst   
         type(isos_class)       :: isos
-        type(marshelf_class)   :: mshlf
-        type(hydro_class)      :: hyd 
+        type(marshelf_class)   :: mshlf 
         type(sediments_class)  :: sed 
         type(geothermal_class) :: gthrm
         
@@ -322,9 +313,6 @@ contains
         ! Initialize marine melt model (bnd%bmb_shlf)
         call marshelf_init(mshlf,path_par,grd%G%nx,grd%G%ny,domain,grd%name,ylmo%bnd%basins)
         
-        ! Initialize basal hydrology (bnd%H_w)
-        call hydro_init(hyd,path_par,grd%G%nx,grd%G%ny)
-
         ! Load other constant boundary variables (bnd%H_sed, bnd%Q_geo)
         call sediments_init(sed,path_par,grd%G%nx,grd%G%ny,domain,grd%name)
         call geothermal_init(gthrm,path_par,grd%G%nx,grd%G%ny,domain,grd%name)
@@ -334,15 +322,14 @@ contains
     end subroutine initialize_yelmo_externals
 
 
-    subroutine write_step_2D_combined(ylmo,isos,mshlf,hyd,filename,time)
+    subroutine write_step_2D_combined(ylmo,isos,mshlf,filename,time)
 
         implicit none 
         
         type(yelmo_class),      intent(IN) :: ylmo
         type(isos_class),       intent(IN) :: isos 
         !type(snapclim_class),   intent(IN) :: snp 
-        type(marshelf_class),   intent(IN) :: mshlf  
-        type(hydro_class),      intent(IN) :: hyd  
+        type(marshelf_class),   intent(IN) :: mshlf 
         !type(sediments_class),  intent(IN) :: sed 
         !type(geothermal_class), intent(IN) :: gthrm
         !type(isos_class),       intent(IN) :: isos
@@ -367,6 +354,10 @@ contains
 
         ! Write model speed 
         call nc_write(filename,"speed",ylmo%par%model_speed,units="kyr/hr",long_name="Model speed (Yelmo only)", &
+                      dim1="time",start=[n],count=[1],ncid=ncid)
+        call nc_write(filename,"dt_avg",ylmo%par%dt_avg,units="yr",long_name="Average timestep", &
+                      dim1="time",start=[n],count=[1],ncid=ncid)
+        call nc_write(filename,"eta_avg",ylmo%par%eta_avg,units="m a-1",long_name="Average eta (maximum PC truncation error)", &
                       dim1="time",start=[n],count=[1],ncid=ncid)
         
         ! == yelmo_topography ==
@@ -407,14 +398,22 @@ contains
 !                        dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         call nc_write(filename,"uxy_b",ylmo%dyn%now%uxy_b,units="m/a",long_name="Basal sliding velocity magnitude", &
                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
-        call nc_write(filename,"uxy_bar",ylmo%dyn%now%uxy_bar,units="m/a",long_name="Vertically integrated velocity magnitude", &
+        call nc_write(filename,"uxy_s",ylmo%dyn%now%uxy_s,units="m/a",long_name="Surface velocity magnitude", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+!         call nc_write(filename,"uxy_bar",ylmo%dyn%now%uxy_bar,units="m/a",long_name="Vertically integrated velocity magnitude", &
+!                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         
 !         call nc_write(filename,"T_ice",ylmo%thrm%now%T_ice,units="K",long_name="Ice temperature", &
 !                       dim1="xc",dim2="yc",dim3="zeta",dim4="time",start=[1,1,1,n],ncid=ncid)
         
-        call nc_write(filename,"T_prime",ylmo%thrm%now%T_ice-ylmo%thrm%now%T_pmp,units="deg C",long_name="Homologous ice temperature", &
-                      dim1="xc",dim2="yc",dim3="zeta",dim4="time",start=[1,1,1,n],ncid=ncid)
+        call nc_write(filename,"H_w",ylmo%thrm%now%H_w,units="m",long_name="Basal water layer thickness", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        
+        call nc_write(filename,"T_prime_b",ylmo%thrm%now%T_prime_b,units="deg C",long_name="Homologous basal ice temperature", &
+                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
+        
+!         call nc_write(filename,"T_prime",ylmo%thrm%now%T_ice-ylmo%thrm%now%T_pmp,units="deg C",long_name="Homologous ice temperature", &
+!                       dim1="xc",dim2="yc",dim3="zeta",dim4="time",start=[1,1,1,n],ncid=ncid)
         call nc_write(filename,"f_pmp",ylmo%thrm%now%f_pmp,units="1",long_name="Fraction of grid point at pmp", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
 
@@ -440,8 +439,6 @@ contains
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
 !         call nc_write(filename,"H_sed",ylmo%bnd%H_sed,units="m",long_name="Sediment thickness", &
 !                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
-        call nc_write(filename,"H_w",ylmo%bnd%H_w,units="m",long_name="Basal water layer thickness", &
-                      dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         call nc_write(filename,"smb",ylmo%bnd%smb,units="m/a ice equiv.",long_name="Surface mass balance", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         call nc_write(filename,"smb_errpd",ylmo%bnd%smb-ylmo%dta%pd%smb_ann,units="m/a ice equiv.",long_name="Surface mass balance error wrt present day", &
