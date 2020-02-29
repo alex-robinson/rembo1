@@ -1,5 +1,9 @@
 program remboyelmo_driver
 
+    use ncio 
+    use nml 
+    use coord 
+
     !use emb_global
     use rembo_sclimate 
     use yelmo 
@@ -13,8 +17,7 @@ program remboyelmo_driver
     use geothermal
     
     use hyster 
-    use ncio 
-
+    
     implicit none
 
     ! Control variables 
@@ -125,7 +128,7 @@ program remboyelmo_driver
     call marshelf_set_Tshlf(mshlf1,to_ann=273.15,dto_ann=0.0)
 
     call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
-                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%G%dx,prec))
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%dx,prec))
 
     yelmo1%bnd%bmb_shlf = mshlf1%now%bmb_shlf  
     yelmo1%bnd%T_shlf   = mshlf1%now%T_shlf  
@@ -229,7 +232,7 @@ if (calc_transient_climate) then
 !         ! == MARINE AND TOTAL BASAL MASS BALANCE ===============================
         
         call marshelf_update(mshlf1,yelmo1%tpo%now%H_ice,yelmo1%bnd%z_bed,yelmo1%tpo%now%f_grnd, &
-                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%G%dx,prec))
+                         yelmo1%bnd%z_sl,regions=yelmo1%bnd%regions,dx=real(yelmo1%grd%dx,prec))
 
 end if 
         
@@ -298,7 +301,7 @@ contains
         ! === Initialize external models (forcing for ice sheet) ======
 
         ! Store yelmo grid in grd and domain name as a shortcut 
-        grd  = ylmo%grid 
+        grd  = ylmo%grd 
         domain = ylmo%par%domain 
 
         ! Initialize global sea level model (bnd%z_sl)
@@ -441,7 +444,7 @@ contains
 !                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         call nc_write(filename,"smb",ylmo%bnd%smb,units="m/a ice equiv.",long_name="Surface mass balance", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
-        call nc_write(filename,"smb_errpd",ylmo%bnd%smb-ylmo%dta%pd%smb_ann,units="m/a ice equiv.",long_name="Surface mass balance error wrt present day", &
+        call nc_write(filename,"smb_errpd",ylmo%bnd%smb-ylmo%dta%pd%smb,units="m/a ice equiv.",long_name="Surface mass balance error wrt present day", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
         call nc_write(filename,"T_srf",ylmo%bnd%T_srf,units="K",long_name="Surface temperature", &
                       dim1="xc",dim2="yc",dim3="time",start=[1,1,n],ncid=ncid)
