@@ -20,9 +20,9 @@ def run_rembo():
     parser = argparse.ArgumentParser()
 
     # Add options
-    parser.add_argument('-e','--exe',type=str,default='test',
+    parser.add_argument('-e','--exe',type=str,default='rembo',
         help='''Define the executable file to use here. Shortcuts:
-test = librembo/bin/rembo_test.x
+rembo = librembo/bin/test_rembo.x
 ''')
     parser.add_argument('-r','--run',action="store_true",
         help='Run the executable after preparing the job?')
@@ -68,30 +68,37 @@ test = librembo/bin/rembo_test.x
     #par_path_2  = args.par_path_2  # Path relative to current working directory (cwd)
     par_path_2  = "remboyelmo/yelmo_Greenland.nml"
 
+    # Load simulation info from json configuration file 
+    if os.path.isfile("run_config.json"):
+        info = json.load(open("run_config.json"))
+    else: 
+        print("Required json file 'run_config.json' containing run options not found.")
+        sys.exit()
+
     # Additional options, consistency checks
 
     # Copy the executable file to the output directory, or
     # call it from its compiled location?    
-    copy_exec  = True 
+    copy_exec = True 
 
     # Submit overrides run 
     if submit: run = True 
 
-    # Expand executable path shortcut if defined
-    if exe_path == "rembo":
-        exe_path   = "librembo/bin/test_rembo.x" 
-        with_yelmo = False
-    elif exe_path == "remboyelmo":
-        exe_path   = "librembo/bin/remboyelmo.x"
-        with_yelmo = True 
-    else:
-        # Keep exe_path the same, but set with_yelmo to False
-        with_yelmo = False 
+    # Expand executable path shortcut if defined, otherwise exe_path remains unchanged.
+    if exe_path in info["exe_shortcuts"]:
+        exe_path = info["exe_shortcuts"].get(exe_path)
 
     # Also extract executable and path filenames 
     exe_fname   = os.path.basename(exe_path)
     par_fname   = os.path.basename(par_path)
     par_fname_2 = os.path.basename(par_path_2)
+
+    # Check if using yelmo too
+    if exe_fname == "yelmox_rembo.x":
+        with_yelmo = True 
+    else:
+        with_yelmo = False 
+
 
     if with_yelmo:
         # Check yelmo related input files
@@ -140,31 +147,23 @@ test = librembo/bin/rembo_test.x
         shutil.copy(par_path_2,rundir)
 
     ## Generate symbolic links to input data folders
-    srcname = "input"
-    dstname = os.path.join(rundir,srcname)
-    srcpath = os.path.abspath(srcname)
-    if os.path.islink(dstname): os.unlink(dstname)
-    os.symlink(srcpath,dstname)
+    for srcname in info["links"]:
+        dstname = os.path.join(rundir,srcname)
+        if os.path.islink(dstname): os.unlink(dstname)
+        if os.path.islink(srcname):
+            linkto = os.readlink(srcname)
+            os.symlink(linkto, dstname)
+        elif os.path.isdir(srcname):
+            srcpath = os.path.abspath(srcname)
+            os.symlink(srcpath,dstname)
+        else:
+            print("Warning: path does not exist {}".format(srcname))
 
-    # # Generate link to extra data folder for personal data files
-    # srcname = "extra_data"
-    # dstname = os.path.join(rundir,srcname)
-    # srcpath = os.path.abspath(srcname)
-    # if os.path.islink(dstname): os.unlink(dstname)
-    # os.symlink(srcpath,dstname)
-
-    srcname = "ice_data"
-    dstname = os.path.join(rundir,srcname)
-    if os.path.islink(dstname): os.unlink(dstname)
-    if os.path.islink(srcname):
-        linkto = os.readlink(srcname)
-        os.symlink(linkto, dstname)
-    elif os.path.isdir(srcname):
-        srcpath = os.path.abspath(srcname)
-        os.symlink(srcpath,dstname)
-    else:
-        print("Warning: path does not exist {}".format(srcname))
-
+    # Write the current git revision information to output directory 
+    if os.path.isdir(".git"):
+        head     = get_git_revision_hash()
+        git_info = open(os.path.join(rundir,"git_revision"),'w').write(head)
+    
     if with_yelmo:
         ## Generate symbolic link to maps folder
         srcname = "maps"
@@ -312,21 +311,10 @@ def makedirs(dirname,remove):
 
     return
 
-def autofolder(params,outfldr0):
-    '''Given a list of parameters,
-       generate an appropriate folder name.
-    '''
-
-    parts = []
-
-    for p in params:
-        parts.append( p.short() )
-
-    # Join the parts together, combine with the base output dir
-    autofldr = '.'.join(parts)
-    outfldr  = outfldr0 + autofldr + '/'
-
-    return outfldr
+def get_git_revision_hash():
+    #githash = subp.check_output(['git', 'describe', '--always', '--long', 'HEAD']).strip()
+    githash = subp.check_output(['git', 'rev-parse', 'HEAD']).strip()
+    return githash.decode("ascii") 
 
 def jobscript_slurm(cmd,rundir,username,usergroup,qos,wtime,useremail):
     '''Definition of the job script'''

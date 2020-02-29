@@ -6,8 +6,6 @@ srcdir   = src
 objdir   = librembo/include
 bindir   = librembo/bin
 libdir   = libs
-rylibdir = remboyelmo/libs
-testdir  = tests
 
 # Command-line options at make call
 debug ?= 0
@@ -54,32 +52,6 @@ rembo_libs = 	$(objdir)/nml.o \
 				$(objdir)/ncio_transpose.o \
 				$(objdir)/interp1D.o
 
-# REMBOYELMO LIB RULES ####
-$(objdir)/sealevel.o : $(rylibdir)/sealevel.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-$(objdir)/hyster.o : $(rylibdir)/hyster.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-		
-$(objdir)/geothermal.o : $(rylibdir)/geothermal.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-$(objdir)/marine_shelf.o : $(rylibdir)/marine_shelf.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-$(objdir)/sediments.o : $(rylibdir)/sediments.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-				
-$(objdir)/isostasy.o: $(rylibdir)/isos/isostasy.f90 $(objdir)/nml.o
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-rylib_libs = 	$(objdir)/sealevel.o \
-				$(objdir)/hyster.o \
-				$(objdir)/geothermal.o \
-				$(objdir)/marine_shelf.o \
-				$(objdir)/sediments.o \
-				$(objdir)/isostasy.o
-
 ###############################################
 ##
 ## Compilation of complete programs
@@ -103,32 +75,13 @@ rembo: rembo-static
 	@echo "    librembo/bin/test_rembo.x is ready."
 	@echo " "
 
-# Compile the static library libyelmo,
-# using Makefile located in $(YELMOROOT) directory 
-yelmo-static: 
-		$(MAKE) -C $(YELMOROOT) yelmo-static 
-
-remboyelmo: yelmo-static rembo-static $(rylib_libs)
-	$(FC) $(DFLAGS) $(FFLAGS) $(INC_LIS) $(INC_YELMO) $(INC_REMBO) $(rylib_libs) -o librembo/bin/remboyelmo.x \
-			remboyelmo/remboyelmo.f90 $(LIB_REMBO) $(LFLAGS)
-	@echo " "
-	@echo "    librembo/bin/remboyelmo.x is ready."
-	@echo " "
-
-check: 
-		@echo $(rylib_libs)
-
-# NOTE: eventually ncio should be extracted from all external libraries (like coord?), and then
-# all external libraries should be linked by adding them to the end of the program compilation 
-# command, instead of just `$(objdir)/nml.o` as it is now. 
-
 .PHONY : usage
 usage:
 	@echo ""
 	@echo "    * USAGE * "
 	@echo ""
-	@echo " make remboyelmo : compiles remboyelmo.x, coupled rembo-yelmo model."
-	@echo " make clean     : cleans object files"
+	@echo " make rembo : compiles rembo.x"
+	@echo " make clean : cleans object files"
 	@echo ""
 
 clean:
