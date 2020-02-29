@@ -108,17 +108,12 @@ rembo: rembo-static
 yelmo-static: 
 		$(MAKE) -C $(YELMOROOT) yelmo-static 
 
-remboyelmo_step1: 
-	-rm librembo/bin/remboyelmo.x 
-
-remboyelmo_step2: yelmo-static $(rylib_libs) $(rembo_libs) $(rembo_base) remboyelmo/remboyelmo.f90
-	$(FC) $(DFLAGS) $(FFLAGS) $(INC_LIS) $(INC_YELMO) -o librembo/bin/remboyelmo.x \
-			$(rylib_libs) $(rembo_libs) $(rembo_base) remboyelmo/remboyelmo.f90 $(LFLAGS)
+remboyelmo: yelmo-static rembo-static $(rylib_libs)
+	$(FC) $(DFLAGS) $(FFLAGS) $(INC_LIS) $(INC_YELMO) $(INC_REMBO) $(rylib_libs) -o librembo/bin/remboyelmo.x \
+			remboyelmo/remboyelmo.f90 $(LIB_REMBO) $(LFLAGS)
 	@echo " "
 	@echo "    librembo/bin/remboyelmo.x is ready."
 	@echo " "
-
-remboyelmo: remboyelmo_step1 remboyelmo_step2
 
 check: 
 		@echo $(rylib_libs)
