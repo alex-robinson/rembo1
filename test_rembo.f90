@@ -26,7 +26,7 @@ program emb_driver
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
     call rembo_init()
     call timing(0,timer_start,timer_tot)
-
+    
     ! Update REMBO, with ice sheet topography    
     call rembo_update(0,T_summer)
      

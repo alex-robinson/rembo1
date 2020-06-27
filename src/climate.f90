@@ -52,8 +52,8 @@ contains
     
     integer, intent(IN) :: n_step
     real(8), intent(IN) :: dT_summer                 ! Summer temp anomaly [K]
-    real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model
-    real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model 
+    real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model or data
+    real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model or data
     
     real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
     real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
@@ -130,6 +130,12 @@ contains
         
         call rembo_get_topo(zs,m2,z_srf,H_ice)
 
+      else 
+        ! Define fields from initial setup 
+
+        zs = fields0%zs 
+        m2 = fields0%m2 
+        
       end if 
 
       ! ================================================
@@ -457,11 +463,15 @@ end if
                           
         init_rembo = 1
 
+        write(*,*) "rembo_init:: summary"
+        write(*,*) "range m2  : ", minval(m2), maxval(m2) 
+        write(*,*) "range zs  : ", minval(zs), maxval(zs) 
+        
       end if
 
     return 
 
-  end subroutine rembo_init 
+  end subroutine rembo_init
 
   subroutine rembo_get_topo(zs,m2,z_srf,H_ice)
 
@@ -503,7 +513,7 @@ end if
       
     return 
 
-  end subroutine rembo_get_topo 
+  end subroutine rembo_get_topo
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l

@@ -1936,46 +1936,6 @@ module emb_functions
   
 end module emb_functions
 
-
-  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! Program    :  e m b e r r o r
-  ! Purpose    :  Write an error message to stdout, pointing to emb 
-  !               file, where real error message is written.
-  ! Author     :  Alex Robinson (16 Jul 2008)
-  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++        
-  subroutine embout(stat,fldr)
-    
-    use emb_global
-    
-    integer :: stat
-    character (len=256) :: fnm, fldr1
-    character (len=*), optional :: fldr 
-    
-    fldr1 = "./"
-    if (present(fldr)) fldr1 = trim(fldr)
-
-    fnm = trim(fldr1)//"rembo.log"
-
-    if (stat .eq. 0 .and. stdout .ne. 6) then
-      ! Open a file to output some ascii information
-      open(unit=stdout,file=trim(fnm),status="unknown") 
-      write(stdout,*) " ==== EMB OUTPUT FILE ===="
-    end if
-      
-    if (stat .eq. 1) then
-      write(*,*) "EMB error. See: "//trim(fnm)
-      stop
-    end if
-    
-    if (stat .eq. -1) then
-      close(stdout)
-    end if
-    
-    return
-  
-  end subroutine embout
-
-
 ! #### READING INPUT FUNCTIONS ####
       
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

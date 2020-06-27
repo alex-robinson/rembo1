@@ -772,7 +772,15 @@ contains
     fields0%lons   = lons
     
     fields0%mask_hydro = mask_hydro
-        
+    
+    write(*,*) "emb_load_input:: summary" 
+    write(*,*) "range m2     : ", minval(fields0%m2),     maxval(fields0%m2)
+    write(*,*) "range zs     : ", minval(fields0%zs),     maxval(fields0%zs)
+    write(*,*) "range accum  : ", minval(fields0%accum),  maxval(fields0%accum)
+    write(*,*) "range precip : ", minval(fields0%precip), maxval(fields0%precip)
+    write(*,*) "range lats   : ", minval(fields0%lats),   maxval(fields0%lats)
+    write(*,*) "range lons   : ", minval(fields0%lons),   maxval(fields0%lons)
+    
     return
     
   end subroutine emb_load_input
@@ -923,4 +931,41 @@ end module emb_global
   end subroutine timer_reset
 
 
+    ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  ! Program    :  e m b e r r o r
+  ! Purpose    :  Write an error message to stdout, pointing to emb 
+  !               file, where real error message is written.
+  ! Author     :  Alex Robinson (16 Jul 2008)
+  ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++        
+  subroutine embout(stat,fldr)
+    
+    use emb_global
+    
+    integer :: stat
+    character (len=256) :: fnm, fldr1
+    character (len=*), optional :: fldr 
+    
+    fldr1 = "./"
+    if (present(fldr)) fldr1 = trim(fldr)
+
+    fnm = trim(fldr1)//"rembo.log"
+
+    if (stat .eq. 0 .and. stdout .ne. 6) then
+      ! Open a file to output some ascii information
+      open(unit=stdout,file=trim(fnm),status="unknown") 
+      write(stdout,*) " ==== EMB OUTPUT FILE ===="
+    end if
+      
+    if (stat .eq. 1) then
+      write(*,*) "EMB error. See: "//trim(fnm)
+      stop
+    end if
+    
+    if (stat .eq. -1) then
+      close(stdout)
+    end if
+    
+    return
+  
+  end subroutine embout
 

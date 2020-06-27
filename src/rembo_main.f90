@@ -803,7 +803,7 @@ end if
     call nc_read_t(fnm,"x2D",init%xx)
     call nc_read_t(fnm,"y2D",init%yy)
     call nc_read_t(fnm,"zs",init%zs)
-    
+
     ! read climate variables first (monthly for many years)
     !call nc_read_t(fnm,"t2m", init%t2m0)
     !call nc_read_t(fnm,"rhum",init%rhum0)
@@ -841,6 +841,12 @@ end if
     ! Get the latitude on lo-resolution
     call tolores(init%lats,latsl,rembo0%wtst,nrt,ratio)
 
+    write(*,*) "ini_rembo summary"
+    write(*,*) "range zs    : ", minval(init%zs),    maxval(init%zs) 
+    write(*,*) "range t2m0  : ", minval(init%t2m0),  maxval(init%t2m0)
+    write(*,*) "range rhum0 : ", minval(init%rhum0), maxval(init%rhum0)
+    write(*,*) "range S0    : ", minval(init%S0),    maxval(init%S0)
+    
     return
           
   end subroutine ini_rembo
