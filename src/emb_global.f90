@@ -670,9 +670,9 @@ contains
         fnm = trim(clim_file)
         write(*,*) "fnm = ", trim(fnm)
         write(*,*) "size(precip): ", size(precip,1), size(precip,2)
-        call nc_read_t(fnm,"pr",  precip)  ! mmwe/a
-        !call nc_read_t(fnm,"sf",accum)     ! mmwe/a
-        accum = precip
+        call nc_read_t(fnm,"rf",  precip)   ! mmwe/a (rainfall)
+        call nc_read_t(fnm,"sf",  accum)    ! mmwe/a (snowfall)
+        precip = precip+accum               ! rainfall + snowfall 
         
     end select
     
