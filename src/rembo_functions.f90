@@ -730,10 +730,13 @@ contains
       write(stdout,*) "  equal to present-day in climcheck to compare accum/abl patterns!"
       
       ! Load present-day ice mask
-      call nc_read(trim(topo_file),"mask",mask)
+      call nc_read_t(trim(topo_file),"H_ice",mask)
       
-      mask = mask+1.d0
-      where ( mask .gt. 1.d0 ) mask = 0.d0
+      where(mask .gt. 0.d0) 
+        mask = 1.d0 
+      elsewhere 
+        mask = 0.d0 
+      end where 
       
     end if
     
