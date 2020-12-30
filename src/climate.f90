@@ -228,8 +228,8 @@ contains
 !                           tjja=saved%tjja, tdjf=saved%tdjf,ttp=saved%ttp, &
 ! !                           pkappa=saved%pkappa,qqfac=fields0%qqfac, &
 !                           pdds=saved%pdds, write_mon = .TRUE. )
-      call rembo_nc_write_small(trim(outfldr)//"clima.nc",ann,mon,n_now,yearnow1,mask=m2,zs=zs, &
-                                tjja=saved%tjja,tdjf=saved%tdjf,ttp=saved%ttp,pdds=saved%pdds)
+      ! call rembo_nc_write_small(trim(outfldr)//"clima.nc",ann,mon,n_now,yearnow1,mask=m2,zs=zs, &
+      !                           tjja=saved%tjja,tdjf=saved%tdjf,ttp=saved%ttp,pdds=saved%pdds)
 
       !! Output monthly file
       if ( write_rembo_m .eq. 1 ) then
