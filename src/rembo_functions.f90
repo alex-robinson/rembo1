@@ -684,7 +684,7 @@ contains
   ! Author     :  Alex Robinson
   ! Purpose    :  Output means/sums of variables for a given region
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,n_step,yearnow)
+  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,yearnow)
     
     implicit none
     
@@ -694,7 +694,6 @@ contains
     character (len=*) :: fnm
     type(rembo_type)  :: d(:), m(:), a
     real (8), dimension(ny,nx) :: mask, zs, lats, lons
-    integer  :: n_step
     real (8) :: yearnow
     
     real (8), parameter :: ela_ebs = 100.d0   ! mm/a
@@ -737,7 +736,7 @@ contains
       elsewhere 
         mask = 0.d0 
       end where 
-      
+
     end if
     
     ! Determine index of 65 deg North Latitude

@@ -2,7 +2,7 @@ module rembo_sclimate
 
   implicit none 
 
-  type rembo_annual_type  ! ij indices 
+  type rembo_class  ! ij indices, times 
     double precision, allocatable :: pr(:,:) 
     double precision, allocatable :: sf(:,:) 
     double precision, allocatable :: smb(:,:) 
@@ -17,14 +17,17 @@ module rembo_sclimate
     double precision, allocatable :: T_djf(:,:) 
     double precision, allocatable :: pdds(:,:)
 
+    double precision :: time_emb, time_smb
+    double precision :: dt_emb,   dt_smb
+    
   end type 
 
-  type(rembo_annual_type) :: rembo_ann 
+  type(rembo_class) :: rembo_ann 
 
   private
   public :: rembo_init 
   public :: rembo_update 
-  public :: rembo_annual_type
+  public :: rembo_class
   public :: rembo_ann
 
 contains 
@@ -39,7 +42,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(n_step,dT_summer,z_srf,H_ice)
+  subroutine rembo_update(time,dT_summer,z_srf,H_ice)
   
     use emb_global
     use emb_functions
@@ -50,7 +53,7 @@ contains
     integer, parameter :: nx=nxs, ny=nys
     real (8), parameter :: dx=dxs
     
-    integer, intent(IN) :: n_step
+    real(8), intent(IN) :: time                      ! Current external driver time
     real(8), intent(IN) :: dT_summer                 ! Summer temp anomaly [K]
     real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model or data
@@ -87,14 +90,11 @@ contains
   
     call cpu_time(timer%climate)           ! get current time in seconds   
     
-    ! Set emb global nstep to driver's n_step 
-    nstep = n_step
-    
     ! ##### Adjust current distribution for temporal shift #####
     ! yearnow needed for boundary forcing and sinsol2d
     if (transient .ne. 0) then           ! Transient runs
       
-      yearnow = get_year(nstep)
+      yearnow = time
       
       ! ## ADJUSTMENT FOR PALEO RUNS (after year 00) ##
       if ( transient .eq. 2 .and. yearnow .gt. 0.d0 ) yearnow = 0.d0  
@@ -105,6 +105,9 @@ contains
     
     end if
 
+    ! Get the current year, as relevant to output
+    yearnow1 = time
+
     ! Adjust time step for calling SMB module
     ! HACK for long transient future simulations (ajr: 15.05.2012)
     !if ( yearnow .gt. 1e3 ) dtime_smb = 10
@@ -113,9 +116,25 @@ contains
     ! Check which operations should be performed for this timestep
     now%clim = .FALSE.
     now%smb  = .FALSE.
-    if( nstep.eq.nstep/dtime_emb*dtime_emb ) now%clim = .TRUE.
-    if( nstep.eq.nstep/dtime_smb*dtime_smb ) now%smb  = .TRUE.
+    !if( nstep.eq.nstep/dtime_emb*dtime_emb ) now%clim = .TRUE.
+    !if( nstep.eq.nstep/dtime_smb*dtime_smb ) now%smb  = .TRUE.
 
+    if (time - rembo_ann%time_emb .ge. dtime_emb) then 
+      ! Updated emb 
+      now%clim = .TRUE. 
+      rembo_ann%dt_emb   = time - rembo_ann%time_emb
+      rembo_ann%time_emb = time 
+      write(*,*) "emb: ", time, rembo_ann%time_emb, rembo_ann%dt_emb
+    end if 
+
+    if (time - rembo_ann%time_smb .ge. dtime_smb) then 
+      ! Updated smb 
+      now%smb = .TRUE. 
+      rembo_ann%dt_smb   = time - rembo_ann%time_smb
+      rembo_ann%time_smb = time 
+      write(*,*) "smb: ", time, rembo_ann%time_smb, rembo_ann%dt_smb
+    end if 
+    
     ! If clim or smb is running, update forcing and topo
     if ( now%clim .or. now%smb ) then
       
@@ -166,7 +185,7 @@ contains
         ! until it approaches equilibrium
         now%clim = .TRUE.; now%smb = .TRUE.
         do qq = 1, n_equili
-          call rembo(yearnow,now,m2,zs,lats,lons,aco2)
+          call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)
           write(*,*) "rembo equili, ",qq
         end do
         
@@ -180,20 +199,17 @@ contains
       end if
                 
       ! Call the energy-moisture balance module (output sent to variable "saved")  
-      call rembo(yearnow,now,m2,zs,lats,lons,aco2)      
+      call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)      
 
     else   ! climchoice=0 => bilinear interp + data 
       
       ! Call conventional approach (output sent to variable "saved") 
-      if ( now%smb ) call conventional(m2,zs,lats,lons,aco2)   
+      if ( now%smb ) call conventional(m2,zs,lats,lons,aco2,time)   
       
     end if
     
     ! #### OUTPUT SECTION ####
-        
-    ! Get the current year, as relevant to output
-    yearnow1 = get_year(n_step)
-
+    
     ! Determine the current output index
     n_now = match(yearnow1,time_out*1d3)
     
@@ -242,7 +258,7 @@ contains
     ! Determine the current output index for restart file
     n_now = match(yearnow1,time_out_r*1d3)
 
-    if ( write_rembo_r .eq. 1 .and. nstep .ne. 0 .and. n_now .ne. 0 ) then
+    if ( write_rembo_r .eq. 1 .and. yearnow1 .ne. year0 .and. n_now .ne. 0 ) then
       call rembo_restart(yearnow1,m2,zs,day(nk),saved%pdds)  ! Write restart file  
     end if
       
@@ -251,7 +267,7 @@ contains
     
       ! (Initialize tmp file, so rembo won't write restart file,
       !  but has something to read)
-      if ( nstep .eq. 0 ) then
+      if ( yearnow1 .ne. year0 ) then
         open(99,file=trim(outfldr)//"tmp123456789",status="unknown")
         write(99,*) "na"
         close(99)
@@ -280,7 +296,7 @@ contains
     end if
       
     ! Output various 1D files, by region
-    if (nstep .eq. nstep/dto_clim*dto_clim ) then
+    if ((time-year0) .eq. (time-year0)/dto_clim*dto_clim ) then
        
       ! First by sector (five sectors total, hard coded for now)
       if ( clim_coupled .lt. 0 .and. .FALSE. ) then
@@ -291,8 +307,8 @@ contains
           
           write(fnm,"(a11,i1,a3)") "rembo.gis.S",qq,".nc"
           call climchecker_new(trim(outfldr)//trim(fnm), &
-                              day,mon,ann,mask,zs,lats,lons,nstep,yearnow1)
-          if ( nstep .eq. 0 ) init_summary2 = 0
+                              day,mon,ann,mask,zs,lats,lons,time)
+          if ( time .eq. year0 ) init_summary2 = 0
         
         end do
       end if 
@@ -301,17 +317,17 @@ contains
       mask = 0.d0
       where( m2 .eq. 0.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.gis.nc", &
-                          day,mon,ann,mask,zs,lats,lons,nstep,yearnow1)
-      if ( nstep .eq. 0 ) init_summary2 = 0
+                          day,mon,ann,mask,zs,lats,lons,time)
+      if ( time .eq. year0 ) init_summary2 = 0
       
 !!!   ! Kill condition for transient simulations (enough ice points and enough time passed)
-!!!      if ( sum(mask) .lt. 150.d0 .and. yearnow1 .gt. 20d3 ) kill = 1
+!!!      if ( sum(mask) .lt. 150.d0 .and. time .gt. 20d3 ) kill = 1
       
       ! And total greenland area
       mask = 0.d0
       where( m2 .le. 1.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.grl.nc", &
-                          day,mon,ann,mask,zs,lats,lons,nstep,yearnow1)
+                          day,mon,ann,mask,zs,lats,lons,time)
 
       ! Write/calc comparison to observational fields
       if ( trim(domain) .eq. "GRL" ) call climchecker2(m2,zs)
@@ -377,7 +393,7 @@ end if
   
   end subroutine rembo_update
   
-  subroutine rembo_init()
+  subroutine rembo_init(time)
   
     use emb_global
     use emb_functions
@@ -385,6 +401,8 @@ end if
   
     implicit none
     
+    real(8), intent(IN) :: time 
+
     integer, parameter :: nx=nxs, ny=nys
     real (8), parameter :: dx=dxs
     
@@ -441,7 +459,7 @@ end if
 
       call emb_globinit(1)
       
-      if(init_rembo .eq. 0) then
+      if (init_rembo .eq. 0) then
         
         ! Allocate day, mon and year structures
         !allocate( day(nk), mon(nm) )
@@ -455,7 +473,7 @@ end if
         ! Calculate the horizontal gradient of the initial topography
         call hgrad(fields0%zs,dx,fields0%dzs)
         
-        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Initialized topography for rembo_update."
+        write(*,"(a1,5x,f12.3,5x,a)") "e",time,"Initialized topography for rembo_update."
         
         ! Initialize output nc file
         call rembo_nc(trim(outfldr)//"clima.nc","years",time_out(1)*1d3, &
@@ -463,11 +481,18 @@ end if
                           
         init_rembo = 1
 
+        rembo_ann%time_emb  = time - dtime_emb 
+        rembo_ann%time_smb  = time - dtime_smb 
+        rembo_ann%dt_emb    = dtime_emb
+        rembo_ann%dt_smb    = dtime_smb
+
         write(*,*) "rembo_init:: summary"
         write(*,*) "range m2  : ", minval(m2), maxval(m2) 
         write(*,*) "range zs  : ", minval(zs), maxval(zs) 
         
       end if
+
+      call rembo_init_2(m2,time)
 
     return 
 
@@ -521,7 +546,7 @@ end if
   ! Purpose    : Determine the climate and melt based on conventional 
   !              approaches
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine conventional(mask,zs,lats,lons,aco2)
+  subroutine conventional(mask,zs,lats,lons,aco2,time)
     
     use emb_global
     use emb_functions
@@ -533,6 +558,7 @@ end if
     integer, parameter :: nx = nxs, ny = nys
 
     double precision, dimension(ny,nx) :: mask, zs, lats, lons, aco2
+    double precision, intent(IN) :: time 
     double precision, dimension(ny,nx) :: tmp
     integer :: i, j, k, m, km, km2
     
@@ -608,7 +634,7 @@ end if
     call cpu_time(timer%now)           ! get current time in seconds
     timer%pddold = (timer%now-timer%pddold)  ! Get elapsed time in seconds
     
-    write(*,"(a1,5x,i10,5x,a)") "e",nstep, "Called pdd (annual)."
+    write(*,"(a1,5x,i10,5x,a)") "e",time, "Called pdd (annual)."
     
     return
   

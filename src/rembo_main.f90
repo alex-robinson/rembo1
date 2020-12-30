@@ -41,6 +41,7 @@ module rembo_main
     
   type choices
     logical :: clim, smb
+    double precision :: time_now, time_prev, dt_now 
   end type   
   
   type tuning_vars
@@ -77,9 +78,11 @@ contains
   ! t0 [°C]      - surface temperature
   ! p0 [kg/m2-s] - precip rate
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo(yearnow,now,m2,zs,lats,lons,aco2)
+  subroutine rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)
 
     implicit none
+    
+    double precision, intent(IN) :: yearnow, yearnow1
     
     integer, parameter :: nxl=nxe, nyl=nye
     double precision, parameter :: dxl = dxe
@@ -91,7 +94,6 @@ contains
     integer :: i, j, k, iter, kd, qd, m, km, km2
     integer :: qq, qqmax
     
-    double precision :: yearnow, yearnow1
     double precision :: get_year
     
     ! Parameters
@@ -118,7 +120,7 @@ contains
     double precision, dimension(nyl,nxl) :: lonfac
     
     double precision :: T_warming_now 
-    double precision, dimension(nyl,nxl) :: latsl
+    !double precision, dimension(nyl,nxl) :: latsl
 
     ! Get current T_warming
     T_warming_now = deltaT(0)
@@ -139,49 +141,49 @@ contains
     lonmax = maxval(emb_grid%x)
     klon   = 0.4d0
     
-    ! #### Initialize variables to be used in rembo model,
-    !      only if it not already initialized
-    if ( init_rembo .lt. 2 ) then
+    ! ! #### Initialize variables to be used in rembo model,
+    ! !      only if it not already initialized
+    ! if ( init_rembo .lt. 2 ) then
       
-      nout_rembo = 0
+    !   nout_rembo = 0
       
-      call ini_rembo(rembo0,latsl)    
-      write(stdout,"(i10,5x,a)") nstep, "Called ini_rembo."
+    !   call ini_rembo(rembo0,latsl)    
+    !   write(stdout,"(f12.3,5x,a)") yearnow1, "Called ini_rembo."
 
-      ! Set snow to limit for the first timestep
-      ! on Greenland (land and ice)
-      ! Only if starting with ice present, otherwise init. snow level is 0.d0
-      if (anf_dat .eq. 1) then
-        where (m2 .lt. 2.d0) day(nk)%snowh = h_snow_max
-        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Snow height set to maximum on land!"
-      end if
+    !   ! Set snow to limit for the first timestep
+    !   ! on Greenland (land and ice)
+    !   ! Only if starting with ice present, otherwise init. snow level is 0.d0
+    !   if (anf_dat .eq. 1) then
+    !     where (m2 .lt. 2.d0) day(nk)%snowh = h_snow_max
+    !     write(*,"(a1,5x,f12.3,5x,a)") "e",yearnow1,"Snow height set to maximum on land!"
+    !   end if
       
-      ! Initialize the PDDs representing vegetation to zero
-      veg_pdds = 0.d0 
+    !   ! Initialize the PDDs representing vegetation to zero
+    !   veg_pdds = 0.d0 
       
-      ! Set saved flag to zero (indicating that ap field has not been saved yet)
-      ap_stored = 0
+    !   ! Set saved flag to zero (indicating that ap field has not been saved yet)
+    !   ap_stored = 0
       
-      if (anf_dat .eq. 3) then  ! Get initial fields from previously saved run
+    !   if (anf_dat .eq. 3) then  ! Get initial fields from previously saved run
       
-        day(nk)%tt    = fields0%tt
-        day(nk)%snowh = fields0%snowh
-        day(nk)%dh    = fields0%dh
-        day(nk)%ap    = fields0%ap
+    !     day(nk)%tt    = fields0%tt
+    !     day(nk)%snowh = fields0%snowh
+    !     day(nk)%dh    = fields0%dh
+    !     day(nk)%ap    = fields0%ap
         
-        veg_pdds      = fields0%pdds
+    !     veg_pdds      = fields0%pdds
         
-        write(*,"(a1,5x,i10,5x,a)") "e",nstep,"Loaded REMBO restart variables!"
-      end if
+    !     write(*,"(a1,5x,f12.3,5x,a)") "e",yearnow1,"Loaded REMBO restart variables!"
+    !   end if
       
-      ! Determine what the melt rate factor should be
-      ! (currently constant for the entire grid
-      melt_ice = mm_teff_ice
+    !   ! Determine what the melt rate factor should be
+    !   ! (currently constant for the entire grid
+    !   melt_ice = mm_teff_ice
       
-      write(stdout,"(i10,5x,a)") nstep, "Further smb initializations."
-      init_rembo = 2
+    !   write(stdout,"(f12.3,5x,a)") yearnow1, "Further smb initializations."
+    !   init_rembo = 2
 
-    end if
+    ! end if
     
     ! #### Initial calculations, depending on module to run ####
     
@@ -192,8 +194,8 @@ contains
     if ( now%clim ) then
       
       ! Update the boundary data fields
-      call update_boundaries(rembo0)
-            
+      call update_boundaries(rembo0,yearnow)
+      
       ! Get the daily insolation for a year at low-resolution
       ! ajr: 1950 represents present day => change for transient runs!   
       call sinsol2d(S,rembo0%lats,yearnow) 
@@ -271,9 +273,9 @@ contains
       
       ! Apply latitudinal scaling of temp anomalies
       do k = 1, nk 
-!         low0(k)%tt   = rembo0%tt(k,:,:)    + deltaT(k)   ! Apply boundary warming
-        low0(k)%tt = rembo0%tt(k,:,:)  &
-                    + deltaT(k)*( 1.d0+lat_grad*(latsl-72.6d0*torads)/((76.d0-72.6d0)*torads) )  ! NEEMup - GISP2
+        low0(k)%tt   = rembo0%tt(k,:,:)    + deltaT(k)   ! Apply boundary warming
+        ! low0(k)%tt = rembo0%tt(k,:,:)  &
+        !             + deltaT(k)*( 1.d0+lat_grad*(latsl-72.6d0*torads)/((76.d0-72.6d0)*torads) )  ! NEEMup - GISP2
       end do
 
       ! Get the precipitation fields from data if desired
@@ -322,17 +324,17 @@ contains
       ! If hi-res fields have already been calculated at least once,
       ! or starting from a restart file, use these as the initial values
       ! pp not needed yet, because it is calculated directly from tt !
-      if ( nstep .gt. 0 .or. anf_dat .eq. 3 ) then
+      if ( yearnow1 .gt. year0 .or. anf_dat .eq. 3 ) then
         
         ! Obtain initial T and P fields from global hi-res values
         call tolores(day(nk)%tt+lapse*zs_0, low%tt,rembo0%wtst,nrt,ratio)
         !!call tolores(day(nk)%pp/sec_day,    low%pp,rembo0%wtst,nrt,ratio)                              
         
-        write(*,*) "REMBO: Aggregated hi-res field (tt) for initial values.",nstep
+        write(*,*) "REMBO: Aggregated hi-res field (tt) for initial values.",yearnow1
       end if
       
       ! Save initial planetary albedo (if using fixed albedo option)
-      if ( ap_fixed .eq. 1 .and. nstep .gt. 0 ) then
+      if ( ap_fixed .eq. 1 .and. yearnow1 .gt. year0 ) then
         
         if ( ap_stored .eq. 0 ) then ! Check to see if array has been stored
           
@@ -460,8 +462,8 @@ contains
         
         ! Determine the current output index, and write to output file (if desired)
         ! Get the current year, as relevant to output
-        yearnow1 = get_year(nstep)
-        
+        !yearnow1 = time 
+
         if ( write_emb_d .eq. 1 .and. match(yearnow1,time_out*1d3) .ne. 0 ) then
 
           if ( kd .eq. 1 ) then
@@ -688,7 +690,7 @@ end if
       timer%emb = (timer%now-timer%emb)  ! Get elapsed time in seconds
       
       write(stdout,*)
-      write(stdout,"(i10,a30,f10.3,1x,f10.3)") nstep,"time EMB [sec]", &
+      write(stdout,"(f12.3,a30,f10.3,1x,f10.3)") yearnow1,"time EMB [sec]", &
                             timer%emb, timer%boundary
 
     end if
@@ -697,6 +699,58 @@ end if
     
   end subroutine rembo
   
+  subroutine rembo_init_2(m2,yearnow1)
+
+    implicit none 
+
+    !double precision :: latsl(nxe,nye)
+    double precision, dimension(nys,nxs) :: m2
+    double precision :: yearnow1 
+
+    ! #### Initialize variables to be used in rembo model,
+
+      nout_rembo = 0
+      
+      call ini_rembo(rembo0) !,latsl)    
+      write(stdout,"(f12.3,5x,a)") yearnow1, "Called ini_rembo."
+
+      ! Set snow to limit for the first timestep
+      ! on Greenland (land and ice)
+      ! Only if starting with ice present, otherwise init. snow level is 0.d0
+      if (anf_dat .eq. 1) then
+        where (m2 .lt. 2.d0) day(nk)%snowh = h_snow_max
+        write(*,"(a1,5x,f12.3,5x,a)") "e",yearnow1,"Snow height set to maximum on land!"
+      end if
+      
+      ! Initialize the PDDs representing vegetation to zero
+      veg_pdds = 0.d0 
+      
+      ! Set saved flag to zero (indicating that ap field has not been saved yet)
+      ap_stored = 0
+      
+      if (anf_dat .eq. 3) then  ! Get initial fields from previously saved run
+      
+        day(nk)%tt    = fields0%tt
+        day(nk)%snowh = fields0%snowh
+        day(nk)%dh    = fields0%dh
+        day(nk)%ap    = fields0%ap
+        
+        veg_pdds      = fields0%pdds
+        
+        write(*,"(a1,5x,f12.3,5x,a)") "e",yearnow1,"Loaded REMBO restart variables!"
+      end if
+      
+      ! Determine what the melt rate factor should be
+      ! (currently constant for the entire grid
+      melt_ice = mm_teff_ice
+      
+      write(stdout,"(f12.3,5x,a)") yearnow1, "Further smb initializations."
+      init_rembo = 2
+
+    return 
+
+  end subroutine rembo_init_2
+
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   !   Subroutine :  i n i _ r e m b o
   !   Author     :  Alex Robinson
@@ -707,7 +761,7 @@ end if
   !   T  [°C]   - SURFACE TEMPERATURE !!
   !   rhum [0:1]
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine ini_rembo(init,latsl)
+  subroutine ini_rembo(init) !,latsl)
             
     implicit none
 
@@ -721,7 +775,7 @@ end if
     character(len=512) :: fnm
     
     type(rembo_initvars) :: init
-    double precision :: latsl(nxl,nyl)
+    !double precision :: latsl(nxl,nyl)
 
     dt = dte
     
@@ -839,7 +893,7 @@ end if
     end do
 
     ! Get the latitude on lo-resolution
-    call tolores(init%lats,latsl,rembo0%wtst,nrt,ratio)
+    !call tolores(init%lats,latsl,rembo0%wtst,nrt,ratio)
 
     write(*,*) "ini_rembo summary"
     write(*,*) "range zs    : ", minval(init%zs),    maxval(init%zs) 
@@ -870,10 +924,12 @@ end if
   
   
   
-  subroutine update_boundaries(init)
+  subroutine update_boundaries(init,time)
     
     implicit none
     
+    double precision, intent(IN) :: time 
+
     integer,  parameter :: nxl = nxe, nyl = nye
     double precision, parameter :: dxl = dxe
     
@@ -892,7 +948,7 @@ end if
     nt = size(init%time0)
     
     ! Get the current year
-    year_now = year0 + nstep
+    year_now = time
     
     ! Calculate how much to offset the start date, if averaging is used
     ! (so that the current year lies in the middle of the averaging period)
@@ -1699,7 +1755,7 @@ end if
       day(k)%snow = day(k)%pp * snowfrac(day(k)%tt)
     end do
         
-    write(*,"(a1,5x,i10,5x,a,f8.2,f8.3)") "e",nstep, &
+    write(*,"(a1,5x,a,f8.2,f8.3)") "e", &
                       "Scaled accumulation (dT, pscalar):",T_warming_now, pscalar
   
     return
