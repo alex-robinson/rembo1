@@ -719,7 +719,9 @@ contains
     type output1
       double precision, dimension(13) :: &
               tt, pp, tte, as, ap, snow, snowh, ice, runoff,  &
-              melt, smb, smbi, pmb, nmb, ma, refrozen, S, S65, melt_insol, melt_S0, pdd_corr
+              melt, smb, smbi, pmb, nmb, ma, refrozen, &
+              S, S65, melt_insol, melt_S0, pdd_corr, &
+              ela, aar  
     end type
   
     type(output1) :: gis
@@ -805,6 +807,12 @@ contains
     gis%nmb(km) = sum(inmb)*dx**2 *area_conv
     gis%pmb(km) = area - gis%nmb(km)
     
+    if (gis%pmb(km) + gis%nmb(km) .ne. 0.0) then 
+      gis%aar(km) = gis%pmb(km) / (gis%pmb(km) + gis%nmb(km))
+    else
+      gis%aar(km) = 0.0 
+    end if 
+
     gis%tt(km)       = mave(mask,dx,a%tt,"ave")
     gis%pp(km)       = mave(mask,dx,a%pp)
     gis%tte(km)      = mave(mask,dx,a%tte,"ave")
@@ -824,6 +832,9 @@ contains
     gis%melt_insol(km)  = mave(mask,dx,a%melt_insol)
     gis%melt_S0(km)     = mave(mask,dx,a%melt_S0)
     gis%pdd_corr(km)    = mave(mask,dx,a%pdd_corr)
+
+    ! Additionally get Equilibrium Line Altitude (ELA) -----
+    call find_ela(gis%ela(km),zs,a%pp-a%runoff,mask=mask.eq.1.d0)
 
     do km = 1, nm
       
@@ -847,6 +858,12 @@ contains
       gis%nmb(km) = sum(inmb)*dx**2 *area_conv
       gis%pmb(km) = area - gis%nmb(km) 
       
+      if (gis%pmb(km) + gis%nmb(km) .ne. 0.0) then 
+        gis%aar(km) = gis%pmb(km) / (gis%pmb(km) + gis%nmb(km))
+      else
+        gis%aar(km) = 0.0 
+      end if 
+    
       ! Store monthly means in global output arrays
       gis%tt(km)       = mave(mask,dx,m(km)%tt,"ave")
       gis%pp(km)       = mave(mask,dx,m(km)%pp)          ! [1d12 Gt/month]
@@ -867,6 +884,10 @@ contains
       gis%melt_insol(km)  = mave(mask,dx,m(km)%melt_insol)
       gis%melt_S0(km)     = mave(mask,dx,m(km)%melt_S0)
       gis%pdd_corr(km)    = mave(mask,dx,m(km)%pdd_corr)
+
+      ! Additionally get Equilibrium Line Altitude (ELA) -----
+      call find_ela(gis%ela(km),zs,m(km)%pp-m(km)%runoff,mask=mask.eq.1.d0) 
+
     end do
     
     ! Initialize output file (netcdf)
@@ -949,12 +970,20 @@ contains
     call nc_write(trim(fnm),"mask_area", area,       dim1="time",start=[nrec],count=[1],units="1e6km3")
     call nc_write(trim(fnm),"nmask",     dble(n_tot),dim1="time",start=[nrec],count=[1],units="na")
     
+    call nc_write(trim(fnm),"ela",       gis%ela,dims=dims,start=[1,nrec],count=[nm13,1], &
+                                            long_name="Equil. line altitude (ELA)",units="m")
+    call nc_write(trim(fnm),"aar",       gis%aar,dims=dims,start=[1,nrec],count=[nm13,1], &
+                                            long_name="Accum. area ratio (AAR)",units="1")
+    
+    call nc_write(trim(fnm),"aar_ann",   gis%aar(13),dim1="time",start=[nrec],count=[1], &
+                                            long_name="Accum. area ratio (AAR)",units="1")
+    
     ! Boundary forcing
-    call nc_write(trim(fnm),"dT_jja",sum(forcing_now%dTbnd(6:8))/3.d0,dim1="time", &
-                  start=[nrec],count=[1],units="degrees celcius")
-    if (paleo_frac_dT .ne. 0.d0) then 
-      call nc_write(trim(fnm),"dT_amp",forcing_now%dTamp,dims=dims,start=[1,nrec],count=[nm13,1],units="degrees celcius")
-    end if 
+    ! call nc_write(trim(fnm),"dT_jja",sum(forcing_now%dTbnd(6:8))/3.d0,dim1="time", &
+    !               start=[nrec],count=[1],units="degrees celcius")
+    ! if (paleo_frac_dT .ne. 0.d0) then 
+    !   call nc_write(trim(fnm),"dT_amp",forcing_now%dTamp,dims=dims,start=[1,nrec],count=[nm13,1],units="degrees celcius")
+    ! end if 
 
     ! Now write daily output (for gis) - only if running rembo solo!!
     if ( clim_coupled .lt. 0 ) then
@@ -969,6 +998,74 @@ contains
   end subroutine climchecker_new
   
   
+
+  subroutine find_ela(ela,z_srf,smb,mask)
+    ! Determine the ELA from smb values.
+
+    implicit none 
+
+    double precision, intent(OUT) :: ela 
+    double precision, intent(IN)  :: z_srf(:,:) 
+    double precision, intent(IN)  :: smb(:,:) 
+    logical,          intent(IN)  :: mask(:,:) 
+
+    ! Local variables 
+    integer :: nx, ny 
+    integer :: npts 
+    double precision :: npts_dble 
+    double precision, allocatable :: wts(:,:) 
+    double precision :: xmin, xmax 
+    double precision :: ymin, ymax
+    double precision :: xbar, ybar 
+    double precision :: b, a 
+
+    nx = size(mask,1)
+    ny = size(mask,2) 
+    allocate(wts(nx,ny)) 
+
+    ! Get mask of current points and count them
+    npts      = count(mask)
+    npts_dble = real(npts,8) 
+
+    ! Now, find the ELA 
+
+    if (npts .eq. 0) then 
+      ! No points available, set ela to zero for now 
+    
+      ela = 0.0d0 
+
+    else 
+      ! Calculate ELA
+
+      ! Determine range of input data points 
+      xmin = minval(z_srf,mask=mask)
+      xmax = maxval(z_srf,mask=mask)
+      ymin = minval(smb,  mask=mask)
+      ymax = maxval(smb,  mask=mask)
+      
+      if (ymin .gt. 0.d0) then 
+        ela = maxval(z_srf,mask=mask) 
+      else if (ymax .lt. 0.d0) then 
+        ela = minval(z_srf,mask=mask) 
+      else 
+        ! Calculate ELA
+
+        wts = 0.0
+        where (mask .and. smb .ne. 0.0) wts = 1.0/smb 
+        where (mask .and. smb .eq. 0.0) wts = maxval(wts)
+        wts = wts / sum(wts) 
+
+        ela = sum(wts*z_srf)
+
+      end if 
+
+    end if 
+
+    return
+
+  end subroutine find_ela
+
+
 end module rembo_functions
 
 

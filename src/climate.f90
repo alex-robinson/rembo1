@@ -20,6 +20,8 @@ module rembo_sclimate
     double precision :: time_emb, time_smb
     double precision :: dt_emb,   dt_smb
     
+    double precision :: time_dto_clim
+    double precision :: time_dto_clim2D
   end type 
 
   type(rembo_class) :: rembo_ann 
@@ -296,8 +298,12 @@ contains
     end if
       
     ! Output various 1D files, by region
-    if ((time-year0) .eq. (time-year0)/dto_clim*dto_clim ) then
-       
+    !if ((time-year0) .eq. (time-year0)/dto_clim*dto_clim ) then
+    if (time - rembo_ann%time_dto_clim .ge. dto_clim ) then 
+
+      ! Update current saved time 
+      rembo_ann%time_dto_clim = time 
+
       ! First by sector (five sectors total, hard coded for now)
       if ( clim_coupled .lt. 0 .and. .FALSE. ) then
         do qq = 1, 5
@@ -328,9 +334,10 @@ contains
       where( m2 .le. 1.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.grl.nc", &
                           day,mon,ann,mask,zs,lats,lons,time)
-
+      if ( time .eq. year0 ) init_summary2 = 0
+      
       ! Write/calc comparison to observational fields
-      if ( trim(domain) .eq. "GRL" ) call climchecker2(m2,zs)
+      !if ( trim(domain) .eq. "GRL" ) call climchecker2(m2,zs)
                                 
     end if
     
@@ -486,6 +493,9 @@ end if
         rembo_ann%dt_emb    = dtime_emb
         rembo_ann%dt_smb    = dtime_smb
 
+        rembo_ann%time_dto_clim   = time - dto_clim 
+        rembo_ann%time_dto_clim2D = time - dto_clim2D 
+        
         write(*,*) "rembo_init:: summary"
         write(*,*) "range m2  : ", minval(m2), maxval(m2) 
         write(*,*) "range zs  : ", minval(zs), maxval(zs) 
@@ -539,6 +549,18 @@ end if
     return 
 
   end subroutine rembo_get_topo
+
+  subroutine rembo_set_time(time)
+
+    implicit none
+
+    double precision, intent(IN) :: time 
+
+    
+
+    return 
+
+  end subroutine rembo_set_time
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l

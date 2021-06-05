@@ -1076,7 +1076,7 @@ end if
     dT2D = dT + lat_fac*(lat-72.6d0)/(76.d0-72.6d0)     ! NEEMup - GISP2 
     return 
 
-  end function deltaT_2D 
+  end function deltaT_2D
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  p p _ s c a l a r
