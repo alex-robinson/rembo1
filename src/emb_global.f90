@@ -47,12 +47,16 @@ module emb_global
   !real (8), parameter :: dxs = 10d3               ! FROM SICOPOLIS
   !integer,  parameter :: nxs = 76, nys = 141       ! FROM SICOPOLIS
   !real (8), parameter :: dxs = 20d3                ! FROM SICOPOLIS
-  integer,  parameter :: nxs = 85, nys = 145       ! FROM SICOPOLIS
-  real (8), parameter :: dxs = 20d3                ! FROM SICOPOLIS
+  ! integer,  parameter :: nxs = 85, nys = 145       ! FROM SICOPOLIS
+  ! real (8), parameter :: dxs = 20d3                ! FROM SICOPOLIS
 
   ! (reinhard, for calov-island)
 !  integer,  parameter :: nxs = 161, nys = 161      ! FROM SICOPOLIS
 !  real (8), parameter :: dxs = 10d3                ! FROM SICOPOLIS
+
+  ! Yelmo
+  integer,  parameter :: nxs = 106, nys = 181      ! FROM Yelmo
+  real (8), parameter :: dxs = 16d3                ! FROM Yelmo
 
   ! Time step choices
   real (8) :: dte
