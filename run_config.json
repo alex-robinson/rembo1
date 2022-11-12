@@ -10,5 +10,5 @@
 
     "const_path_default" : "par/yelmo_const_Earth.nml",
 
-    "links" : ["input","ice_data"]
+    "links" : ["input","ice_data","rembo_Greenland.nml"]
 }

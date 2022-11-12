@@ -67,6 +67,7 @@ rembo = librembo/bin/test_rembo.x
     par_path    = args.par_path    # Path relative to current working directory (cwd)
     #par_path_2  = args.par_path_2  # Path relative to current working directory (cwd)
     par_path_2  = "remboyelmo/yelmo_Greenland.nml"
+    par_path_3  = "rembo_Greenland.nml"
 
     # Load simulation info from json configuration file 
     if os.path.isfile("run_config.json"):
@@ -92,6 +93,7 @@ rembo = librembo/bin/test_rembo.x
     exe_fname   = os.path.basename(exe_path)
     par_fname   = os.path.basename(par_path)
     par_fname_2 = os.path.basename(par_path_2)
+    par_fname_3 = os.path.basename(par_path_3)
 
     # Check if using yelmo too
     if exe_fname == "yelmox_rembo.x":
@@ -137,6 +139,9 @@ rembo = librembo/bin/test_rembo.x
         # and copy the default parameter file 
         makedirs(rundir,remove=True)
         shutil.copy(par_path,rundir)
+    
+    # Copy new parameter file
+    shutil.copy(par_path_3,rundir)
     
     # Add an output directory for 'obs' from model
     makedirs(rundir+"/obs",remove=True)

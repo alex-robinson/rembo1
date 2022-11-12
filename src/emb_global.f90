@@ -345,13 +345,16 @@ contains
       stdout = 334
       call embout(0,trim(outfldr))
       
+if (.FALSE.) then 
+      ! Load parameters from options_rembo file 
+      
       ! Get the parameter choices from the options file,
       ! and save these values to the global parameter array
       call get_params(trim(outfldr)//"options_rembo",glob=1)
         
       ! Write the parameter list to a file
       call out_params(trim(outfldr)//"rembo.params")
-      
+
       domain              = cparam("domain")
       restart_file        = cparam("restart_file")
       topo_file           = cparam("topo_file")
@@ -525,7 +528,12 @@ contains
       
       !!! End extra cases
       
-      
+      ! ===== LOAD PARAMETERS FROM NML FILE INSTEAD OF OPTIONS_REMBO =====
+else
+      call emb_par_load(trim(outfldr)//"rembo_Greenland.nml","rembo")
+end if 
+      ! ==================================================================
+
       ! * Once I know prad and trad, I can calculate nrt and nrp
       !   (the neighborhood radii)
       nrt = int(trad / dxs)
@@ -651,6 +659,191 @@ contains
   
   end subroutine emb_globinit
   
+  subroutine emb_par_load(path_par,group)
+
+      use nml 
+
+      implicit none
+
+      character(len=*), intent(IN) :: path_par
+      character(len=*), intent(IN) :: group 
+
+      call nml_read(path_par,group,"domain",          domain)
+      call nml_read(path_par,group,"restart_file",    restart_file)
+      call nml_read(path_par,group,"topo_file",       topo_file)
+      call nml_read(path_par,group,"forcing_file",    forcing_file)
+      call nml_read(path_par,group,"emb_clim_file",   emb_clim_file)
+      call nml_read(path_par,group,"clim_file",       clim_file)
+
+      !! Program switches
+      call nml_read(path_par,group,"climchoice",      climchoice)
+      call nml_read(path_par,group,"precip",          precip)
+      call nml_read(path_par,group,"temper",          temper)
+      call nml_read(path_par,group,"equili",          equili)
+      call nml_read(path_par,group,"solver",          solver)
+      call nml_read(path_par,group,"melt_choice",     melt_choice)
+      call nml_read(path_par,group,"refreezing",      refreezing)
+      call nml_read(path_par,group,"co2_rad",         co2_rad)
+      
+      call nml_read(path_par,group,"ap_fixed",        ap_fixed)
+      call nml_read(path_par,group,"boundary_forcing",boundary_forcing)
+      call nml_read(path_par,group,"anf_dat",         anf_dat)
+      call nml_read(path_par,group,"clim_coupled",    clim_coupled)
+      call nml_read(path_par,group,"transient",       transient)
+      call nml_read(path_par,group,"kill",            kill)
+      call nml_read(path_par,group,"slow_hyst",       slow_hyst)
+      call nml_read(path_par,group,"timetype",        timetype)
+      call nml_read(path_par,group,"tuning",          tuning)
+      call nml_read(path_par,group,"itm_S0",          itm_S0)
+      
+      !! Time variables
+      call nml_read(path_par,group,"dte",             dte)
+      call nml_read(path_par,group,"dtime_emb",       dtime_emb)
+      call nml_read(path_par,group,"dtime_smb",       dtime_smb)
+      call nml_read(path_par,group,"dto_clim",        dto_clim)
+      call nml_read(path_par,group,"dto_clim2d",      dto_clim2d)
+      call nml_read(path_par,group,"dto_timer",       dto_timer)
+      call nml_read(path_par,group,"n_equili",        n_equili)
+      
+      !! Writing switches
+      call nml_read(path_par,group,"write_emb_d",     write_emb_d)
+      call nml_read(path_par,group,"write_rembo_m",   write_rembo_m)
+      call nml_read(path_par,group,"write_rembo_d",   write_rembo_d)
+      call nml_read(path_par,group,"write_rembo_r",   write_rembo_r)
+      
+      !! Time options
+      call nml_read(path_par,group,"year0",           year0)
+      call nml_read(path_par,group,"yearf",           yearf)
+      call nml_read(path_par,group,"year_offset",     year_offset)
+
+      !! Boundary data options
+      call nml_read(path_par,group,"bnd_yr0",         bnd_yr0)
+      call nml_read(path_par,group,"bnd_start",       bnd_start)
+      call nml_read(path_par,group,"bnd_ave",         bnd_ave)
+      call nml_read(path_par,group,"bnd_trans",       bnd_trans)
+      call nml_read(path_par,group,"bnd_trans_delay", bnd_trans_delay)
+      call nml_read(path_par,group,"forcing_yr0",     forcing_yr0)
+      call nml_read(path_par,group,"forcing_yrf",     forcing_yrf)
+      
+      !! EMB diffusion variables
+      call nml_read(path_par,group,"kappaamp",        kappaamp)
+      call nml_read(path_par,group,"kappalat",        kappalat)
+      call nml_read(path_par,group,"kappalon",        kappalon)
+      call nml_read(path_par,group,"kappazs",         kappazs)
+
+      !! EMB diffusion variables, T
+      call nml_read(path_par,group,"tce",             tce)
+      call nml_read(path_par,group,"tkappa",          tkappa)
+      call nml_read(path_par,group,"tb",              tb)
+      call nml_read(path_par,group,"ta",              ta)
+      call nml_read(path_par,group,"trfac",           trfac)
+      call nml_read(path_par,group,"tlfac",           tlfac)
+      call nml_read(path_par,group,"s0",              s0)
+      
+      call nml_read(path_par,group,"T_offset",        T_offset)
+      call nml_read(path_par,group,"T_warming",       T_warming)
+      call nml_read(path_par,group,"T_wintfac",       T_wintfac)
+      call nml_read(path_par,group,"T_noise",         T_noise)
+      call nml_read(path_par,group,"T_noise_period",  T_noise_period)
+      call nml_read(path_par,group,"clim_sens",       clim_sens)
+      call nml_read(path_par,group,"firn_factor",     firn_factor)
+      call nml_read(path_par,group,"dT_factor",       dT_factor)
+      call nml_read(path_par,group,"dT_min",          dT_min)
+      call nml_read(path_par,group,"dT_width",        dT_width)
+      call nml_read(path_par,group,"lat_grad",        lat_grad)
+      call nml_read(path_par,group,"f_eem",           f_eem)
+      call nml_read(path_par,group,"f_hol",           f_hol)
+      call nml_read(path_par,group,"f_seas",          f_seas)
+      call nml_read(path_par,group,"f_glac",          f_glac)
+      call nml_read(path_par,group,"T_warming_delay", T_warming_delay)
+      call nml_read(path_par,group,"T_trans_max",     T_trans_max)
+      call nml_read(path_par,group,"T_diff",          T_diff)
+      call nml_read(path_par,group,"dT_rate",         dT_rate)
+      
+      ! (reinhard)
+      call nml_read(path_par,group,"tempamp",         tempamp)
+
+      !! EMB diffusion variables, P
+      call nml_read(path_par,group,"pce",             pce)
+      call nml_read(path_par,group,"prfac",           prfac)
+      call nml_read(path_par,group,"p_scaleT",        p_scaleT)
+      call nml_read(path_par,group,"pkappa",          pkappa)
+      call nml_read(path_par,group,"p_k",             p_k)
+      call nml_read(path_par,group,"p_k_eastfrac",    p_k_eastfrac)
+      call nml_read(path_par,group,"p_k_lat",         p_k_lat)
+      call nml_read(path_par,group,"p_tau",           p_tau)
+      call nml_read(path_par,group,"p_he",            p_he)
+      call nml_read(path_par,group,"ppfac",           ppfac)
+      
+      !! Snow fraction 
+      call nml_read(path_par,group,"snow_Tmin",       snow_Tmin)
+      call nml_read(path_par,group,"snow_Tmax",       snow_Tmax)
+      
+      !! Surface albedo
+      call nml_read(path_par,group,"as_snow0",        as_snow0)
+      call nml_read(path_par,group,"as_snow1",        as_snow1)
+      call nml_read(path_par,group,"as_snow2",        as_snow2)
+      call nml_read(path_par,group,"as_snow_forest",  as_snow_forest)
+      call nml_read(path_par,group,"as_ice",          as_ice)
+      call nml_read(path_par,group,"as_land",         as_land)
+      call nml_read(path_par,group,"as_land_forest",  as_land_forest)
+      call nml_read(path_par,group,"as_ocean",        as_ocean)
+      call nml_read(path_par,group,"hsnow_crit0",     hsnow_crit0)
+      call nml_read(path_par,group,"hsnow_crit1",     hsnow_crit1)
+      call nml_read(path_par,group,"melt_crit",       melt_crit)
+      
+      !! Planetary albedo, parameterization 1
+      call nml_read(path_par,group,"ap0_intercept",   ap0_intercept)
+      call nml_read(path_par,group,"ap0_slope",       ap0_slope)
+
+      !! Melt variables
+      call nml_read(path_par,group,"Teff_sigma",      Teff_sigma)
+      call nml_read(path_par,group,"mm_teff_snow",    mm_teff_snow)
+      call nml_read(path_par,group,"mm_teff_ice",     mm_teff_ice)
+      call nml_read(path_par,group,"pdd_factor",      pdd_factor)
+      call nml_read(path_par,group,"pdd_Tmax",        pdd_Tmax)
+      call nml_read(path_par,group,"pdd_Tmin",        pdd_Tmin)
+      call nml_read(path_par,group,"pdd_spread",      pdd_spread)
+      call nml_read(path_par,group,"pdd_amax",        pdd_amax)
+      call nml_read(path_par,group,"Pmaxfrac",        Pmaxfrac)
+
+      !! Oerleman's melt scheme
+      call nml_read(path_par,group,"itm_c",           itm_c)
+      call nml_read(path_par,group,"itm_b",           itm_b)
+      call nml_read(path_par,group,"itm_t",           itm_t)
+      call nml_read(path_par,group,"at_intercept",    at_intercept)
+      call nml_read(path_par,group,"at_slope",        at_slope)
+      
+      !! Refreezing parameters (superimposed ice)
+      call nml_read(path_par,group,"Cp",              Cp)
+      call nml_read(path_par,group,"T_melt",          T_melt)
+      call nml_read(path_par,group,"h_snow_max",      h_snow_max)
+
+      !! Smoothing radii and topography
+      call nml_read(path_par,group,"prad",            prad)
+      call nml_read(path_par,group,"trad",            trad)
+
+      !! Physics
+      call nml_read(path_par,group,"Lw",              Lw)
+      call nml_read(path_par,group,"Lm",              Lm)
+      call nml_read(path_par,group,"Ls",              Ls)
+
+      !!! EXTRA cases
+      call nml_read(path_par,group,"smb_ppfac",       smb_ppfac)
+      call nml_read(path_par,group,"smb_dT",          smb_dT)
+      
+      call nml_read(path_par,group,"h_dVdt_max",      h_dVdt_max)
+      call nml_read(path_par,group,"h_dTdt_min",      h_dTdt_min)
+      call nml_read(path_par,group,"h_dTdt_max",      h_dTdt_max)
+      call nml_read(path_par,group,"h_dVdt_window",   h_dVdt_window)
+      call nml_read(path_par,group,"h_fac",           h_fac)
+      
+      call nml_read(path_par,group,"paleo_frac_dT",   paleo_frac_dT)
+      
+      return
+
+  end subroutine emb_par_load
+
   subroutine emb_load_input()
     
     implicit none
