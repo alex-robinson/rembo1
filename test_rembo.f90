@@ -24,11 +24,11 @@ program emb_driver
     call cpu_time(timer_start) 
   
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
-    call rembo_init()
+    call rembo_init(year0)
     call timing(0,timer_start,timer_tot)
     
     ! Update REMBO, with ice sheet topography    
-    call rembo_update(0,T_summer)
+    call rembo_update(year0,T_summer)
      
     n_step_max = yearf - year0
   
@@ -36,7 +36,7 @@ program emb_driver
     do n_step = 1, n_step_max    ! in years
 
         ! call REMBO1     
-        call rembo_update(n_step,T_summer)
+        call rembo_update(year0+n_step,T_summer)
             
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)
