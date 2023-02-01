@@ -5,8 +5,7 @@ NC_FROOT=/usr/local/Cellar/netcdf-fortran/4.6.0
 INC_NC  = -I${NC_FROOT}/include
 LIB_NC  = -L${NC_FROOT}/lib -lnetcdff -L${NC_CROOT}/lib -lnetcdf
 
-#COORDROOT = /Users/robinson/models/EURICE/coordinates/libcoordinates
-COORDROOT = /Users/robinson/Downloads/coordinates/libcoordinates
+COORDROOT = /Users/robinson/models/EURICE/coordinates/libcoordinates
 INC_COORD = -I${COORDROOT}/include
 LIB_COORD = -L${COORDROOT}/include -lcoordinates
 
