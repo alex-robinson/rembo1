@@ -2,7 +2,13 @@ module rembo_sclimate
 
   implicit none 
 
-  type rembo_class  ! ij indices, times 
+  type rembo_param_class
+    double precision :: dtime_emb
+    double precision :: dtime_smb
+  end type
+
+  type rembo_class  ! ij indices, times
+    type(rembo_param_class) :: par 
     double precision, allocatable :: pr(:,:) 
     double precision, allocatable :: sf(:,:) 
     double precision, allocatable :: smb(:,:) 
@@ -121,20 +127,20 @@ contains
     !if( nstep.eq.nstep/dtime_emb*dtime_emb ) now%clim = .TRUE.
     !if( nstep.eq.nstep/dtime_smb*dtime_smb ) now%smb  = .TRUE.
 
-    if (time - rembo_ann%time_emb .ge. dtime_emb) then 
+    if (time - rembo_ann%time_emb .ge. rembo_ann%par%dtime_emb) then 
       ! Updated emb 
       now%clim = .TRUE. 
       rembo_ann%dt_emb   = time - rembo_ann%time_emb
       rembo_ann%time_emb = time 
-      write(*,*) "emb: ", time, rembo_ann%time_emb, rembo_ann%dt_emb
+      write(*,"(4f12.3)") "emb: ", time, rembo_ann%time_emb, rembo_ann%dt_emb, rembo_ann%par%dtime_emb
     end if 
 
-    if (time - rembo_ann%time_smb .ge. dtime_smb) then 
+    if (time - rembo_ann%time_smb .ge. rembo_ann%par%dtime_smb) then 
       ! Updated smb 
       now%smb = .TRUE. 
       rembo_ann%dt_smb   = time - rembo_ann%time_smb
       rembo_ann%time_smb = time 
-      write(*,*) "smb: ", time, rembo_ann%time_smb, rembo_ann%dt_smb
+      write(*,"(4f12.3)") "smb: ", time, rembo_ann%time_smb, rembo_ann%dt_smb, rembo_ann%par%dtime_smb
     end if 
     
     ! If clim or smb is running, update forcing and topo
@@ -496,6 +502,10 @@ end if
         rembo_ann%time_dto_clim   = time - dto_clim 
         rembo_ann%time_dto_clim2D = time - dto_clim2D 
         
+        ! Store parameter values too 
+        rembo_ann%par%dtime_emb = dtime_emb 
+        rembo_ann%par%dtime_smb = dtime_smb 
+
         write(*,*) "rembo_init:: summary"
         write(*,*) "range m2  : ", minval(m2), maxval(m2) 
         write(*,*) "range zs  : ", minval(zs), maxval(zs) 
