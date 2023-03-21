@@ -132,7 +132,7 @@ contains
       now%clim = .TRUE. 
       rembo_ann%dt_emb   = time - rembo_ann%time_emb
       rembo_ann%time_emb = time 
-      write(*,"(4f12.3)") "emb: ", time, rembo_ann%time_emb, rembo_ann%dt_emb, rembo_ann%par%dtime_emb
+      write(*,"(a,4f12.3)") "emb: ", time, rembo_ann%time_emb, rembo_ann%dt_emb, rembo_ann%par%dtime_emb
     end if 
 
     if (time - rembo_ann%time_smb .ge. rembo_ann%par%dtime_smb) then 
@@ -140,7 +140,7 @@ contains
       now%smb = .TRUE. 
       rembo_ann%dt_smb   = time - rembo_ann%time_smb
       rembo_ann%time_smb = time 
-      write(*,"(4f12.3)") "smb: ", time, rembo_ann%time_smb, rembo_ann%dt_smb, rembo_ann%par%dtime_smb
+      write(*,"(a,4f12.3)") "smb: ", time, rembo_ann%time_smb, rembo_ann%dt_smb, rembo_ann%par%dtime_smb
     end if 
     
     ! If clim or smb is running, update forcing and topo
