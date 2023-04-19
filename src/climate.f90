@@ -394,7 +394,7 @@ if (.TRUE.) then
       end do 
 
       ! Modify SMB to make sure it is well-behaved in cold locations with positive SMB
-      call modify_smb(rembo_ann%smb)
+      !call modify_smb(rembo_ann%smb)
 
     end if 
 end if 
