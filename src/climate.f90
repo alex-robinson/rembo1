@@ -393,6 +393,9 @@ if (.TRUE.) then
       end do 
       end do 
 
+      ! Modify SMB to make sure it is well-behaved in cold locations with positive SMB
+      call modify_smb(rembo_ann%smb)
+
     end if 
 end if 
     ! ================================================
@@ -406,6 +409,41 @@ end if
   
   end subroutine rembo_update
   
+  subroutine modify_smb(smb)
+
+    implicit none
+
+    real (8), intent(INOUT) :: smb(:,:) 
+
+    ! Local variables
+    integer :: i, j, nx, ny  
+    integer :: n 
+    real (8) :: smb_neighb(4)
+
+    nx = size(smb,1)
+    ny = size(smb,2)
+    
+    do j = 2, ny-1 
+    do i = 2, nx-1
+    
+      smb_neighb = [smb(j,i-1),smb(j,i+1),smb(j-1,i),smb(j+1,i)]
+      n = count(smb_neighb .gt. 0.0)
+
+      if (n .ge. 3 .and. smb(i,j) .lt. 0.0) then 
+        ! At least three neighbors have positive SMB and current point has negative SMB,
+        ! so set current smb equal to average of neighbors 
+
+        smb(i,j) = sum(smb_neighb,mask=smb_neighb .gt. 0.0)/real(n)
+        
+      end if
+
+    end do 
+    end do
+
+    return
+
+  end subroutine modify_smb
+
   subroutine rembo_init(time)
   
     use emb_global

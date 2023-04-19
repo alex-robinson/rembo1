@@ -359,9 +359,10 @@ contains
       
       ! ajr: Modify snowheight of last day of the year, if 
       ! all neighbors are snow-covered and this point is snow free
-      if (climchoice .eq. 1) then 
-        call modify_snow_height(day(nk)%snowh,m2,zs)
-      end if 
+      ! Note: disabled as it appears not to change anything...
+      ! if (climchoice .eq. 1) then 
+      !   call modify_snow_height(day(nk)%snowh,m2,zs)
+      ! end if 
 
     end if
     

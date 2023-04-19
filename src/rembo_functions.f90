@@ -708,7 +708,7 @@ contains
             ! Current point, snow free - set to average of neighbors 
 
             snowh(i,j) = 0.25*(snowh(j,i-1)+snowh(j,i+1)+snowh(j-1,i)+snowh(j+1,i))
-            
+
           end if
 
         end if
