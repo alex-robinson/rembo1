@@ -356,7 +356,13 @@ contains
     if ( now%smb ) then
     
       if (climchoice .eq. 0) day(nk)%snowh = 0.d0
-            
+      
+      ! ajr: Modify snowheight of last day of the year, if 
+      ! all neighbors are snow-covered and this point is snow free
+      if (climchoice .eq. 1) then 
+        call modify_snow_height(day(nk)%snowh,m2,zs)
+      end if 
+
     end if
     
     timer%boundary = 0.d0
