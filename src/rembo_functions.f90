@@ -679,50 +679,6 @@ contains
     
   end subroutine tune_pkappa
   
-  subroutine modify_snow_height(snowh,m2,zs)
-
-    implicit none
-
-    real (8), intent(INOUT) :: snowh(:,:) 
-    real (8), intent(IN)    :: m2(:,:) 
-    real (8), intent(IN)    :: zs(:,:) 
-
-    ! Local variables
-    integer :: i, j 
-
-    integer,  parameter :: nx = nxs, ny = nys
-    real (8), parameter :: dx = dxs
-    
-    do i = 2, nx-1
-    do j = 2, ny-1 
-
-      if (m2(j,i-1) .eq. 0.0 .and. m2(j,i+1) .eq. 0.0 .and. &
-          m2(j-1,i) .eq. 0.0 .and. m2(j+1,i) .eq. 0.0) then 
-        ! Ice-covered neighbors 
-
-        if (snowh(j,i-1) .gt. 0.0 .and. snowh(j,i+1) .gt. 0.0 .and. &
-            snowh(j-1,i) .gt. 0.0 .and. snowh(j+1,i) .gt. 0.0) then
-          ! Snow-covered neighbors
-
-          if (snowh(i,j) .eq. 0.0) then 
-            ! Current point, snow free - set to average of neighbors 
-
-            snowh(i,j) = 0.25*(snowh(j,i-1)+snowh(j,i+1)+snowh(j-1,i)+snowh(j+1,i))
-
-          end if
-
-        end if
-        
-      end if
-
-    end do 
-    end do 
-
-
-    return
-
-  end subroutine modify_snow_height
-
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  c l i m c h e c k e r
   ! Author     :  Alex Robinson
