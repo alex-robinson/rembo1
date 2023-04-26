@@ -1,8 +1,10 @@
+.DS_store
+.vscode
 yelmo
 Makefile
+runrembo.js
 librembo
 ice_data
 output
 .obj
 *.x
-.DS_store
