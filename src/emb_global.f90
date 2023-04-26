@@ -606,7 +606,7 @@ end if
                          dt_surf=dble(dtime_smb))
       
       ! Get input fields
-      call emb_load_input()
+      call emb_load_input(trim(outfldr)//"rembo_Greenland.nml")
       
       ! Initialize the sicopolis resolution grid
       call make_grid(sico_grid,dxs,x0,y0,nx,ny)
@@ -844,10 +844,12 @@ end if
 
   end subroutine emb_par_load
 
-  subroutine emb_load_input()
+  subroutine emb_load_input(path_par)
     
     implicit none
     
+    character(len=*), intent(IN) :: path_par
+
     integer, parameter :: nx = nxs, ny = nys
     real (8), dimension(ny,nx) :: accum, precip
     real (8), dimension(ny,nx) :: m2, zs, zb, lats, lons, zb0
@@ -896,6 +898,9 @@ end if
     m2 = 0.0
     where(zs .gt. 0.0 .and. H_ice .eq. 0.0) m2 = 1.0 
     where(zs .le. 0.0 .and. H_ice .eq. 0.0) m2 = 2.0  
+
+    ! Load a different topography as desired (based on parameter choices)
+    call emb_load_topo(H_ice,zb,zs,m2,path_par)
 
     ! Load the hydrological basin
     !call nc_read_t(fnm,"mask_hydro",mask_hydro)
@@ -978,11 +983,118 @@ end if
     write(*,*) "range lats   : ", minval(fields0%lats),   maxval(fields0%lats)
     write(*,*) "range lons   : ", minval(fields0%lons),   maxval(fields0%lons)
     
+
+
+    stop 
+
+
+
     return
     
   end subroutine emb_load_input
   
-    
+
+  subroutine emb_load_topo(H_ice,z_bed,z_srf,mask,filename)
+        ! This subroutine is the first step to intializing 
+        ! the state variables. It initializes only the topography
+        ! to facilitate calculation of boundary variables (eg, T_srf),
+        ! which should be initialized externally afterwards.
+        ! The state variables are either calculated directly or
+        ! loaded from a restart file. 
+        
+        use nml 
+
+        implicit none 
+
+        real(8), intent(OUT) :: H_ice(:,:) 
+        real(8), intent(OUT) :: z_bed(:,:) 
+        real(8), intent(OUT) :: z_srf(:,:) 
+        real(8), intent(OUT) :: mask(:,:)
+        character(len=*),  intent(IN) :: filename  
+
+        ! Local variables 
+        logical             :: init_topo_load
+        character(len=1028) :: init_topo_path
+        character(len=56)   :: init_topo_names(2)
+
+        real(8), parameter :: rho_ice = 910.0
+        real(8), parameter :: rho_a   = 3300.0
+        real(8), parameter :: mv = -9999.0 
+
+        ! Load parameters related to topography initiaization 
+        call nml_read(filename,"emb_init_topo","init_topo_load",  init_topo_load)
+        call nml_read(filename,"emb_init_topo","init_topo_path",  init_topo_path)
+        call nml_read(filename,"emb_init_topo","init_topo_names", init_topo_names)
+
+        if (init_topo_load) then 
+
+          ! === Bedrock elevation and ice thickness =====
+
+          call nc_read_t(init_topo_path,init_topo_names(1), H_ice, missing_value=mv)
+          call nc_read_t(init_topo_path,init_topo_names(2), z_bed, missing_value=mv) 
+
+          ! === Cleanup =====
+
+          ! Clean up ice thickness field 
+          where (H_ice .lt. 0.1) H_ice = 0.0 
+          where (H_ice .ge. 0.1 .and. H_ice .lt. 10.0) H_ice = 10.0 
+          where (H_ice .gt. 10e3) H_ice = 0.0       ! To handle potential strange missing value points 
+
+          where (z_bed .lt. -10e3) z_bed = 0.0       ! To handle potential strange missing value points 
+          where (z_bed .gt. 10e3)  z_bed = 0.0       ! To handle potential strange missing value points 
+          
+          ! Calculate surface elevation field
+
+          call calc_z_srf_max(z_srf,H_ice,z_bed,dble(0.0),rho_ice,rho_sw)
+
+          ! Calculate mask
+          mask = 0.0
+          where(z_srf .gt. 0.0 .and. H_ice .eq. 0.0) mask = 1.0 
+          where(z_srf .le. 0.0 .and. H_ice .eq. 0.0) mask = 2.0  
+
+          ! Summary for log file: 
+
+          write(*,*) "emb_load_topo:: range(z_bed):     ", minval(z_bed), maxval(z_bed)
+          write(*,*) "emb_load_topo:: range(H_ice):     ", minval(H_ice), maxval(H_ice) 
+          write(*,*) "emb_load_topo:: range(z_srf):     ", minval(z_srf), maxval(z_srf)
+          write(*,*) "emb_load_topo:: range(mask):      ", minval(mask),  maxval(mask)
+        
+        else
+
+          write(*,*) "emb_load_topo:: specific topography not loaded."
+
+        end if 
+
+        return 
+
+    end subroutine emb_load_topo
+
+    elemental subroutine calc_z_srf_max(z_srf,H_ice,z_bed,z_sl,rho_ice,rho_sw)
+        ! Calculate surface elevation
+        ! Adapted from Pattyn (2017), Eq. 1
+        
+        implicit none 
+
+        real(8), intent(INOUT) :: z_srf 
+        real(8), intent(IN)    :: H_ice
+        real(8), intent(IN)    :: z_bed
+        real(8), intent(IN)    :: z_sl
+        real(8), intent(IN)    :: rho_ice 
+        real(8), intent(IN)    :: rho_sw
+        
+        ! Local variables
+        integer :: i, j, nx, ny 
+        real(8) :: rho_ice_sw
+
+        rho_ice_sw = rho_ice/rho_sw ! Ratio of density of ice to seawater [--]
+        
+        ! Initially calculate surface elevation everywhere 
+        z_srf = max(z_bed + H_ice, z_sl + (1.0-rho_ice_sw)*H_ice)
+        
+        return 
+
+    end subroutine calc_z_srf_max
+
 end module emb_global
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
