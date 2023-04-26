@@ -983,12 +983,6 @@ end if
     write(*,*) "range lats   : ", minval(fields0%lats),   maxval(fields0%lats)
     write(*,*) "range lons   : ", minval(fields0%lons),   maxval(fields0%lons)
     
-
-
-    stop 
-
-
-
     return
     
   end subroutine emb_load_input
