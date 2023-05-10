@@ -1,11 +1,13 @@
 program emb_driver
-  
+    
+    use nml 
     use rembo_sclimate 
     
     implicit none
 
     integer :: n_step, n_step_max 
     double precision :: timer_start, timer_tot
+
     real(8) :: year0
     real(8) :: yearf 
     real(8) :: T_summer 
@@ -15,17 +17,21 @@ program emb_driver
     write(*,*) "                   over Greenland" 
     write(*,*)
     
-    T_summer = 0.0 
-
-    year0 = 0.0 
-    yearf = 10.0 
-
     ! Get start time in seconds
     call cpu_time(timer_start) 
   
     ! Initialize the climate model REMBO, including loading parameters from options_rembo 
     call rembo_init(year0)
     call timing(0,timer_start,timer_tot)
+    
+    ! Read in parameters
+    call nml_read("rembo_Greenland.nml","ctrl","year0",      year0)
+    call nml_read("rembo_Greenland.nml","ctrl","yearf",      yearf)
+    call nml_read("rembo_Greenland.nml","ctrl","T_summer",   T_summer)
+    
+    !year0    = 0.0 
+    !yearf    = 10.0 
+    !T_summer = 0.0 
     
     ! Update REMBO, with ice sheet topography    
     call rembo_update(year0,T_summer)
