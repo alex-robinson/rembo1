@@ -13,7 +13,8 @@ module rembo_main
   type emb_vars
     double precision, dimension(nye,nxe) ::   &
         tt, pp, qq, snow, rain, S, ap, lats,  &
-        rhum, dh, rrco2, dS
+        rhum, dh, rrco2, dS, &
+        dpp_corr
   end type
   
   type(emb_vars) :: low
@@ -31,6 +32,8 @@ module rembo_main
     double precision, dimension(:,:,:), allocatable :: t2m0,rhum0
     double precision, dimension(:), allocatable :: time0
     integer :: bndstep
+
+    double precision, dimension(nk,nye,nxe) :: dpp_corr
   end type
   
   type(rembo_initvars) :: rembo0
@@ -292,6 +295,11 @@ contains
         end do
       end if
       
+      ! Assume precip flux-correction is zero by default
+      do k = 1, nk
+        low0(k)%dpp_corr = 0.d0 
+      end do 
+
       ! Get the temperature fields from data if desired
       ! (they will be stored in the global day/mon/ann structures)
       if ( temper .eq. 0 )then
@@ -418,6 +426,15 @@ contains
             ! scale the precip (for uncertainty studies)
             low%pp = low%pp * pp_scalar(deltaT(kd))
             
+            ! ---------------------------------------------
+            ! ajr: to do
+            ! Add flux correction application here
+
+            low%pp = low%pp + low0(kd)%dpp_corr
+
+            ! ---------------------------------------------
+            
+
             ! Calculate other quantities
             low%snow = low%pp * snowfrac(low%tt - lapse*zsl)
             low%rain = low%pp - low%snow
