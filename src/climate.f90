@@ -50,7 +50,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(time,dT_summer,z_srf,H_ice)
+  subroutine rembo_update(time,dT_summer,z_srf,H_ice,dT_mon,aco2_now)
   
     use emb_global
     use emb_functions
@@ -65,7 +65,9 @@ contains
     real(8), intent(IN) :: dT_summer                 ! Summer temp anomaly [K]
     real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model or data
-    
+    real(8), intent(IN), optional :: dT_mon(12)      ! Monthly temperature anomalies
+    real(8), intent(IN), optional :: aco2_now        ! Global atmospheric CO2 concentation
+
     real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
     real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
     real (8), dimension(ny,nx) :: restart_tt, restart_pp
@@ -81,15 +83,21 @@ contains
     integer :: i, j, k, qq, n, n_now
     real (8) :: dtime1, dtime2
     real (8) :: yearnow, yearnow1, get_year
-    real (8) :: T_warming_now, tmp_noise
+    real (8) :: tmp_noise
     
     real (8) :: bndtmp
     
     type(choices) :: now
 
-    ! Update summer temperature anomaly in program 
-    T_warming_in = dT_summer 
-    
+    ! Update boundary climate forcing in program (stored in global variables Tanomaly and T_warming)
+    if (present(dT_mon)) then
+      ! Get daily temperature anomalies from input monthly anomalies
+      call rembo_update_boundary_forcing_monthly(Tanomaly,T_warming,dT_mon,day_month,day_year)
+    else
+      ! Get daily temperature anomalies from input T_summer and T_wintfac values
+      call rembo_update_boundary_forcing_sin(Tanomaly,T_warming,dT_summer,dT_summer*T_wintfac,day_year)
+    end if
+
     ! Kill program as needed (for fracs and other simulations)
     if ( kill .eq. 1 ) then
       write(*,*) "Kill switch activated, program finished."
@@ -167,15 +175,19 @@ contains
 
       ! ================================================
       
-      ! Get current paleo forcing 
-      !write(*,*) "climate:: forcing:",size(forcing)
-      if ( boundary_forcing .gt. 0 ) call get_forcing_now(yearnow,m2)
+      ! ! Get current paleo forcing 
+      ! !write(*,*) "climate:: forcing:",size(forcing)
+      ! if ( boundary_forcing .gt. 0 ) call get_forcing_now(yearnow,m2)
       
-      ! Determine amount of atmospheric co2 based on warming
-      ! T_warming = T_global_mean_warming = T_greenland_summer_warming
-      T_warming_now = deltaT(0)
-      aco2 = co2(T_warming_now)     
+      ! ! Determine amount of atmospheric co2 based on warming
+      ! ! T_warming = T_global_mean_warming = T_greenland_summer_warming
+      ! T_warming = deltaT(0)
+      ! aco2 = co2(T_warming)     
       
+      aco2 = co2(T_warming)
+
+      if (present(aco2_now)) aco2 = aco2_now 
+
     end if
     
     ! #### Call REMBO module ####
@@ -351,7 +363,7 @@ contains
         
     if (now%clim) then
       write(*,"(a1,5x,a10,f12.2)") "e","yearnow = ",yearnow
-      write(*,"(a1,5x,a10,f12.2)") "e","co2 = ",co2(T_warming_now)
+      write(*,"(a1,5x,a10,f12.2)") "e","co2 = ",co2(T_warming)
     end if
     
     call cpu_time(timer%now)                   ! get current time in seconds

@@ -8,6 +8,142 @@ module emb_functions
   
  contains
   
+  subroutine rembo_update_boundary_forcing_monthly(T_anomaly,T_warming,T_monthly,day_month,day_year)
+  
+    implicit none
+
+    real(8), intent(OUT) :: T_anomaly(:)    ! Daily temperature anomaly values
+    real(8), intent(OUT) :: T_warming       ! Summer average temperature anomaly
+    
+    real(8), intent(IN)  :: T_monthly(12)   ! Monthly temperature anomalies to interpolate
+    real(8), intent(IN) :: day_month 
+    real(8), intent(IN) :: day_year 
+
+    ! Calculate temperature anomaly for each day of the year
+    call calc_daily_values(T_anomaly,T_monthly,day_month,day_year)
+
+    ! Store summer mean value too
+    T_warming = sum(T_monthly(6:8)) / 3d0
+
+    return
+
+  end subroutine rembo_update_boundary_forcing_monthly
+
+  subroutine rembo_update_boundary_forcing_sin(T_anomaly,T_warming,T_summer,T_winter,day_year)
+  
+    implicit none
+
+    real(8), intent(OUT) :: T_anomaly(:)    ! Daily temperature anomaly values
+    real(8), intent(OUT) :: T_warming       ! Summer average temperature anomaly
+    
+    real(8), intent(IN)  :: T_summer
+    real(8), intent(IN)  :: T_winter
+    real(8), intent(IN) :: day_year 
+
+    ! Local variables
+
+    ! Calculate temperature anomaly for each day of the year
+    call calc_deltaT_sin(T_anomaly,T_summer,T_winter,day_year)
+
+    ! Store summer mean value too
+    T_warming = T_summer 
+
+    return
+
+  end subroutine rembo_update_boundary_forcing_sin
+
+  subroutine calc_deltaT_sin(dT,T_summer,T_winter,day_year)
+    ! Typically T_winter = T_summer * T_wintfac, with T_wintfac=2 (winter 2x warmer than summer)
+    
+    real(8), intent(OUT) :: dT(:)
+    real(8), intent(IN)  :: T_summer
+    real(8), intent(IN)  :: T_winter
+    real(8), intent(IN)  :: day_year    ! total days per year (day_year=360 typically)
+    ! Local variables
+    real (8) :: Tamp, Tmean
+    integer  :: k 
+
+    Tamp    = (T_winter - T_summer) / 2.d0
+    Tmean   = (T_winter + T_summer) / 2.d0
+    
+    ! Get the temperature anomaly for each day of the year
+    do k = 1, int(day_year)
+      dT(k) = Tmean + Tamp * dcos(2.d0*pi*(k-15)/day_year)
+    end do 
+
+    return
+
+  end subroutine calc_deltaT_sin
+
+  subroutine calc_daily_values(var_daily,var_mon,day_month,day_year)
+
+    implicit none
+
+    real(8), intent(OUT) :: var_daily(:)    ! size=nk
+    real(8), intent(IN)  :: var_mon(:)      ! size=nm
+    real(8), intent(IN)  :: day_month 
+    real(8), intent(IN)  :: day_year 
+
+    ! Local variables
+    integer :: dnow, q, k, nm
+    integer :: q0, q1, q2 
+    integer :: mid, day 
+    real(8) :: wt0, wt1, wt2, wttot
+
+    nm = size(var_mon,1)
+
+    ! ####################################################################
+    ! Interpolate data in time: monthly => daily
+    ! ####################################################################
+    dnow = 0
+
+    do q = 1, nm
+
+      do k = 1, int(day_month)
+
+        dnow = dnow+1
+
+        q1 = q                     ! q1 is current month
+
+        q0 = q1-1                  ! q0 is previous month
+        if (q0 .eq. 0) q0 = 12     ! Loop to december
+
+        if (q1 .eq. 13) q1 = 1     ! Loop to january for current month
+
+        q2 = q1+1                  ! q2 is next month
+        if (q2 .eq. 13) q2 = 1     ! Loop to january for next month
+
+        mid = day_month / 2   ! Halfway point of current month (+/- 1 day)
+        day = k - mid
+
+        ! When day < mid, weight shared between wt0 and wt1
+        ! When day = mid, weight goes to current month
+        ! When day > mid, weight shared between wt1 and wt2
+        wt0 = dble (- min(0,day))
+        wt1 = day_month - abs(day)
+        wt2 = dble (  max(0,day))
+
+        ! Normalize weights
+        wttot = dble(wt0 + wt1 + wt2)
+        wt0 = wt0 / wttot
+        wt1 = wt1 / wttot
+        wt2 = wt2 / wttot
+        
+        var_daily(dnow) = var_mon(q0)*wt0 + &
+                          var_mon(q1)*wt1 + &
+                          var_mon(q2)*wt2
+     
+      end do
+    end do
+    
+    return
+
+  end subroutine calc_daily_values
+
+
+! ==========
+
+
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  l o a d _ f o r c i n g
   ! Author     :  Alex Robinson
