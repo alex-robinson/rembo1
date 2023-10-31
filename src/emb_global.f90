@@ -110,14 +110,14 @@ module emb_global
   
   ! ### Constants for temperature diffusion
   real (8) :: tce, tkappa, tb, ta, trfac, tlfac, s0
-  real (8) :: T_offset, T_warming, T_wintfac, Teff_sigma
+  real (8) :: T_offset, T_wintfac, Teff_sigma
   real (8) :: T_noise, T_noise_period, clim_sens, firn_factor, dT_factor, dT_min, dT_width, lat_grad
   real (8) :: T_warming_delay, T_trans_max, T_diff, dT_rate
   real (8) :: f_eem, f_hol, f_seas, f_glac 
 
-  ! Externally defined temperature anomaly for new deltaT approach 
-  ! (loaded in rembo_update)
-  real (8) :: T_warming_in 
+  ! ! Externally defined temperature anomaly for new deltaT approach 
+  ! ! (loaded in rembo_update)
+  ! real (8) :: T_warming_in 
   
   ! (reinhard)
   real (8) :: tempamp
@@ -270,8 +270,6 @@ module emb_global
   
   type(boundary_forcing_type), allocatable, dimension(:) :: forcing
   type(boundary_forcing_type) :: forcing_now
-
-  double precision :: Tanomaly(nk)
   
 contains  
     
@@ -427,7 +425,6 @@ if (.FALSE.) then
       s0                          =  param("s0")
         
       T_offset                    =  param("T_offset")
-      T_warming                   =  param("T_warming")
       T_wintfac                   =  param("T_wintfac")
       T_noise                     =  param("T_noise")
       T_noise_period              =  param("T_noise_period")
@@ -741,7 +738,6 @@ end if
       call nml_read(path_par,group,"s0",              s0)
       
       call nml_read(path_par,group,"T_offset",        T_offset)
-      call nml_read(path_par,group,"T_warming",       T_warming)
       call nml_read(path_par,group,"T_wintfac",       T_wintfac)
       call nml_read(path_par,group,"T_noise",         T_noise)
       call nml_read(path_par,group,"T_noise_period",  T_noise_period)

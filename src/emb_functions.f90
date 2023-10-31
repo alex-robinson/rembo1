@@ -881,10 +881,11 @@ module emb_functions
   ! Author     :  Alex Robinson
   ! Purpose    :  Determine the current values of boundary forcing
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine get_forcing_now(time,mask)
+  subroutine get_forcing_now(T_anomaly,time,mask)
 
     implicit none
     
+    real(8), intent(OUT) :: T_anomaly(:)
     integer :: k, q, dnow, q0, q1, q2, mid, day
     double precision :: time
     double precision :: wt0, wt1, wt2, wttot
@@ -955,9 +956,9 @@ module emb_functions
         wt1 = wt1 / wttot
         wt2 = wt2 / wttot
         
-        Tanomaly(dnow) = forcing_now%dT(q0)*wt0 + &
-                         forcing_now%dT(q1)*wt1 + &
-                         forcing_now%dT(q2)*wt2
+        T_anomaly(dnow) = forcing_now%dT(q0)*wt0 + &
+                          forcing_now%dT(q1)*wt1 + &
+                          forcing_now%dT(q2)*wt2
      
       end do
     end do
@@ -977,9 +978,11 @@ module emb_functions
   !               summer warming = global warming
   !               winter warming = higher warming
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  function deltaT_orig(day) result(deltaT)
+  function deltaT_orig(day,T_warming,T_anomaly) result(deltaT)
     
     integer :: day
+    real(8), intent(IN) :: T_warming
+    real(8), intent(IN) :: T_anomaly(:)
     real (8) :: deltaT, Twrmng, Tw, Tamp, Tmean
     
     real (8) :: step_frac
@@ -994,13 +997,13 @@ module emb_functions
     
     select case(slow_hyst)
       case(1,-1)
-        Twrmng = dTtrans(nstep)
+        Twrmng = dTtrans(nstep,T_warming)
       case(2,-2)
         Twrmng = T_warming + dTtrans0(nstep)
       case(3)
         Twrmng = T_warming + Tnoise(nstep)
       case(4,-4)
-        Twrmng = dTtrans1(nstep)
+        Twrmng = dTtrans1(nstep,T_warming)
       case DEFAULT
         if ( nstep .ge. T_warming_delay ) Twrmng = T_warming *step_frac
 
@@ -1021,25 +1024,27 @@ module emb_functions
        
       ! Add daily value from paleo if needed
       if ( day .gt. nk ) day = day - nk
-      if ( boundary_forcing .gt. 0 ) deltaT = deltaT + Tanomaly(day)
+      if ( boundary_forcing .gt. 0 ) deltaT = deltaT + T_anomaly(day)
     end if
     
     return
 
   end function deltaT_orig
   
-  function deltaT(day) result(dT_out)
+  function deltaT_new_but_obsolete(day,T_warming,T_anomaly) result(dT_out)
     
     integer  :: day
     real (8) :: dT_out      ! Warming for the given day, or summer value
+    real(8), intent(IN) :: T_warming
+    real(8), intent(IN) :: T_anomaly(:)
 
     ! Local variables
     real (8) :: T_summer  
     real (8) :: Tw, Tamp, Tmean
     real (8) :: step_frac
     
-    ! Update T_summer with global forcing dT value 
-    T_summer = T_warming_in 
+    ! Update T_summer with external forcing dT value 
+    T_summer = T_warming
     
     Tw      = T_summer * T_wintfac     ! Default T_wintfac is 2 (winter 2x warmer than summer)
     Tamp    = (Tw - T_summer) / 2.d0
@@ -1056,12 +1061,12 @@ module emb_functions
        
       ! Add daily value from paleo if needed
       if ( day .gt. nk ) day = day - nk
-      if ( boundary_forcing .gt. 0 ) dT_out = dT_out + Tanomaly(day)
+      if ( boundary_forcing .gt. 0 ) dT_out = dT_out + T_anomaly(day)
     end if
     
     return
 
-  end function deltaT
+  end function deltaT_new_but_obsolete
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  d t T r a n s 0
@@ -1109,11 +1114,12 @@ module emb_functions
   ! Purpose    :  Generate correct T_warming for gradual changes over
   !               time (continuous stability diagram!)
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  function dTtrans(n_step)
+  function dTtrans(n_step,T_warming)
     
     integer :: n_step, n_tot, n_yr    
     double precision :: y, dx
     double precision :: dT1, dT2, dT_mid, dT_min, dT_max, dT_diff
+    double precision :: T_warming
     double precision :: dTtrans
     
     ! Get the current n and the total n
@@ -1164,9 +1170,10 @@ module emb_functions
   ! Purpose    :  Generate correct T_warming for gradual changes over
   !               time (continuous stability diagram!)
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  function dTtrans1(n_step)
+  function dTtrans1(n_step,T_warming)
     
     integer :: n_step
+    double precision :: T_warming
     double precision :: dTtrans1
     
 !     double precision, parameter :: dTdt_min = 1.d0/1d6      ! 1deg/million years

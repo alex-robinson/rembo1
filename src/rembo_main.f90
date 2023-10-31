@@ -81,12 +81,13 @@ contains
   ! t0 [°C]      - surface temperature
   ! p0 [kg/m2-s] - precip rate
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)
+  subroutine rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)
 
     implicit none
     
     double precision, intent(IN) :: yearnow, yearnow1
-    
+    double precision, intent(IN) :: T_warming           ! Summer anomaly
+    double precision, intent(IN) :: T_anomaly(:)        ! Daily anomalies
     integer, parameter :: nxl=nxe, nyl=nye
     double precision, parameter :: dxl = dxe
     double precision :: dt
@@ -122,11 +123,7 @@ contains
     double precision :: lonmin, lonmax, klon
     double precision, dimension(nyl,nxl) :: lonfac
     
-    double precision :: T_warming_now 
     !double precision, dimension(nyl,nxl) :: latsl
-
-    ! Get current T_warming
-    T_warming_now = deltaT(0)
 
     ! Set local variables equal to global values
     dt = dte
@@ -276,16 +273,16 @@ contains
       
       ! Apply latitudinal scaling of temp anomalies
       do k = 1, nk 
-        low0(k)%tt   = rembo0%tt(k,:,:)    + deltaT(k)   ! Apply boundary warming
+        low0(k)%tt   = rembo0%tt(k,:,:)    + T_anomaly(k)   ! Apply boundary warming
         ! low0(k)%tt = rembo0%tt(k,:,:)  &
-        !             + deltaT(k)*( 1.d0+lat_grad*(latsl-72.6d0*torads)/((76.d0-72.6d0)*torads) )  ! NEEMup - GISP2
+        !             + T_anomaly(k)*( 1.d0+lat_grad*(latsl-72.6d0*torads)/((76.d0-72.6d0)*torads) )  ! NEEMup - GISP2
       end do
 
       ! Get the precipitation fields from data if desired
       ! (they will be stored in the global day/mon/ann structures)
       if ( precip .eq. 0 ) then
         
-        call precip0(m2,zs,lats,lons)
+        call precip0(m2,zs,lats,lons,T_warming)
         
         ! Scale precip to lo-resolution
         do k = 1, nk
@@ -304,7 +301,7 @@ contains
       ! (they will be stored in the global day/mon/ann structures)
       if ( temper .eq. 0 )then
       
-        call temper0(m2,zs,lats,lons)
+        call temper0(m2,zs,lats,lons,T_anomaly)
         
         ! Scale temper to lo-resolution (and convert to sea-level T)
         do k = 1, nk
@@ -424,7 +421,7 @@ contains
                         paramfields%qqfac,paramfields%p_tau)
             
             ! scale the precip (for uncertainty studies)
-            low%pp = low%pp * pp_scalar(deltaT(kd))
+            low%pp = low%pp * pp_scalar(T_anomaly(kd))
             
             ! ---------------------------------------------
             ! ajr: to do
@@ -1695,7 +1692,7 @@ end if
   ! Purpose  :  Calculate the precipitation based on a default field
   !             and anomalies
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine precip0(mask,zs,lats,lons)
+  subroutine precip0(mask,zs,lats,lons,T_warming)
 
     implicit none
     
@@ -1706,8 +1703,9 @@ end if
     double precision, dimension(ny,nx) :: gamma, eta, dzs0, dzs
     double precision, dimension(ny,nx) :: pscalar
     double precision, dimension(nye,nxe) :: dzsl
-    double precision :: T_warming_now, sigma, sfac
-    
+    double precision :: sigma, sfac
+    double precision :: T_warming          ! Summer warming anomaly
+
     integer :: i, j, k, m, km, km2
 
     character(len=256) :: fnm
@@ -1715,9 +1713,6 @@ end if
     ! Assign global
     sigma = Teff_sigma
     
-    ! Get current T_warming
-    T_warming_now = deltaT(0)
- 
     ! Scale precipitation based on the boundary temperature anomaly
       
     ! Letreguilly, Huybrechts, 1991
@@ -1761,7 +1756,7 @@ end if
             *min(1.5d0, (dzs+1d-3)/(dzs0+1d-3)) &
             + zs/4d3
             
-    pscalar = gamma * dexp(eta*T_warming_now)
+    pscalar = gamma * dexp(eta*T_warming)
     
     ! Apply the scaling factor to the data loaded using function emb_load_input
     ann%pp   = fields0%precip * pscalar
@@ -1773,7 +1768,7 @@ end if
     end do
         
     write(*,"(a1,5x,a,f8.2,f8.3)") "e", &
-                      "Scaled accumulation (dT, pscalar):",T_warming_now, pscalar
+                      "Scaled accumulation (dT, pscalar):", T_warming, pscalar
   
     return
     
@@ -1785,7 +1780,7 @@ end if
   ! Purpose  :  Calculate the temperature based on a default field
   !             and anomalies
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine temper0(mask,zs,lats,lons)
+  subroutine temper0(mask,zs,lats,lons,T_anomaly)
 
     implicit none
     
@@ -1796,6 +1791,8 @@ end if
     double precision :: gma, gmj, cma, cmj, dma, dmj
     character (len=100) :: method
     
+    double precision, intent(IN) :: T_anomaly(:)    ! Daily prescribed anomaly values 
+
     integer :: i, j, k, m, km, km1, km2
     double precision :: sigma
     
@@ -1879,7 +1876,7 @@ end if
     
     ! Get daily T and Teff values.
     do k = 1, nk
-      day(k)%tt  = tma - tampl*dcos(2.d0*pi*(k-15)/day_year) + deltaT(k) + T_offset
+      day(k)%tt  = tma - tampl*dcos(2.d0*pi*(k-15)/day_year) + T_anomaly(k) + T_offset
       day(k)%tte = effectiveT(day(k)%tt,sigma) * sec_frac
     end do   
     

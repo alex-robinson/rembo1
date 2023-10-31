@@ -87,15 +87,18 @@ contains
     
     real (8) :: bndtmp
     
+    real(8) :: T_warming        ! Summer temperature anomaly
+    real(8) :: T_anomaly(nk)    ! Daily temperature anomalies
+
     type(choices) :: now
 
     ! Update boundary climate forcing in program (stored in global variables Tanomaly and T_warming)
     if (present(dT_mon)) then
       ! Get daily temperature anomalies from input monthly anomalies
-      call rembo_update_boundary_forcing_monthly(Tanomaly,T_warming,dT_mon,day_month,day_year)
+      call rembo_update_boundary_forcing_monthly(T_anomaly,T_warming,dT_mon,day_month,day_year)
     else
       ! Get daily temperature anomalies from input T_summer and T_wintfac values
-      call rembo_update_boundary_forcing_sin(Tanomaly,T_warming,dT_summer,dT_summer*T_wintfac,day_year)
+      call rembo_update_boundary_forcing_sin(T_anomaly,T_warming,dT_summer,dT_summer*T_wintfac,day_year)
     end if
 
     ! Kill program as needed (for fracs and other simulations)
@@ -205,7 +208,7 @@ contains
         ! until it approaches equilibrium
         now%clim = .TRUE.; now%smb = .TRUE.
         do qq = 1, n_equili
-          call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)
+          call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)
           write(*,*) "rembo equili, ",qq
         end do
         
@@ -219,12 +222,12 @@ contains
       end if
                 
       ! Call the energy-moisture balance module (output sent to variable "saved")  
-      call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2)      
+      call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)      
 
     else   ! climchoice=0 => bilinear interp + data 
       
       ! Call conventional approach (output sent to variable "saved") 
-      if ( now%smb ) call conventional(m2,zs,lats,lons,aco2,time)   
+      if ( now%smb ) call conventional(m2,zs,lats,lons,aco2,T_warming,T_anomaly,time)   
       
     end if
     
@@ -331,7 +334,7 @@ contains
           
           write(fnm,"(a11,i1,a3)") "rembo.gis.S",qq,".nc"
           call climchecker_new(trim(outfldr)//trim(fnm), &
-                              day,mon,ann,mask,zs,lats,lons,time)
+                              day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
           if ( time .eq. year0 ) init_summary2 = 0
         
         end do
@@ -341,7 +344,7 @@ contains
       mask = 0.d0
       where( m2 .eq. 0.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.gis.nc", &
-                          day,mon,ann,mask,zs,lats,lons,time)
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
       if ( time .eq. year0 ) init_summary2 = 0
       
 !!!   ! Kill condition for transient simulations (enough ice points and enough time passed)
@@ -351,7 +354,7 @@ contains
       mask = 0.d0
       where( m2 .le. 1.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.grl.nc", &
-                          day,mon,ann,mask,zs,lats,lons,time)
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
       if ( time .eq. year0 ) init_summary2 = 0
       
       ! Write/calc comparison to observational fields
@@ -590,7 +593,7 @@ end if
   ! Purpose    : Determine the climate and melt based on conventional 
   !              approaches
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine conventional(mask,zs,lats,lons,aco2,time)
+  subroutine conventional(mask,zs,lats,lons,aco2,T_warming,T_anomaly,time)
     
     use emb_global
     use emb_functions
@@ -606,6 +609,9 @@ end if
     double precision, dimension(ny,nx) :: tmp
     integer :: i, j, k, m, km, km2
     
+    double precision, intent(IN) :: T_warming       ! Summer warming average
+    double precision, intent(IN) :: T_anomaly(:)    ! Daily temp anomaly values
+    
     character(len=10)  :: c_dxs, dattype
     character(len=256) :: fnm
     
@@ -613,8 +619,8 @@ end if
     
     ! Get the precipitation and temperature fields from data
     ! (they will be stored in the global day/mon/ann structures)
-    call precip0(mask,zs,lats,lons)
-    call temper0(mask,zs,lats,lons)
+    call precip0(mask,zs,lats,lons,T_warming)
+    call temper0(mask,zs,lats,lons,T_anomaly)
 
     ! #### Begin melt potential calculation ####
     ! Get annual pdd distribution [PDD/a]... pdd: Reinhard's formula; ppb: my formula

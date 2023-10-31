@@ -684,7 +684,7 @@ contains
   ! Author     :  Alex Robinson
   ! Purpose    :  Output means/sums of variables for a given region
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,yearnow)
+  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,T_warming,T_anomaly,yearnow)
     
     implicit none
     
@@ -694,6 +694,9 @@ contains
     character (len=*) :: fnm
     type(rembo_type)  :: d(:), m(:), a
     real (8), dimension(ny,nx) :: mask, zs, lats, lons
+    real(8), intent(IN) :: T_warming        ! Summer anomaly value
+    real(8), intent(IN) :: T_anomaly(:)     ! Daily anomaly values
+
     real (8) :: yearnow
     
     real (8), parameter :: ela_ebs = 100.d0   ! mm/a
@@ -913,8 +916,8 @@ contains
     
     do km = 1, 13
       
-      if (km .eq. 13) dT = deltaT(0)
-      if (km .lt. 13) dT = deltaT(km*int(day_month)-15)
+      if (km .eq. 13) dT = T_warming
+      if (km .lt. 13) dT = T_anomaly(km*int(day_month)-15)
       aco2 = co2(dT)
       
       dT_all(km)   = dT    
