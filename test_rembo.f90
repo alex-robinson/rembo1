@@ -11,6 +11,7 @@ program emb_driver
     real(8) :: year0
     real(8) :: yearf 
     real(8) :: T_summer 
+    real(8) :: T_mon(12)
 
     write(*,*)
     write(*,*) "  *** 2D Diffusion: Temperature and precipitation ***"
@@ -31,10 +32,13 @@ program emb_driver
     
     !year0    = 0.0 
     !yearf    = 10.0 
-    !T_summer = 0.0 
-    
+    !T_summer = 5.0 
+    !T_mon    = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0,1.0]
+    T_summer = 0.0
+    T_mon    = 0.0
+
     ! Update REMBO, with ice sheet topography    
-    call rembo_update(year0,T_summer)
+    call rembo_update(year0,T_summer,dT_mon=T_mon,co2=280.0d0)
     
     n_step_max = yearf - year0
   
@@ -42,7 +46,7 @@ program emb_driver
     do n_step = 1, n_step_max    ! in years
 
         ! call REMBO1     
-        call rembo_update(year0+n_step,T_summer)
+        call rembo_update(year0+n_step,T_summer,dT_mon=T_mon,co2=280.0d0)
             
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)

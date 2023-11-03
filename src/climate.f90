@@ -50,7 +50,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(time,dT_summer,z_srf,H_ice,dT_mon,aco2_now)
+  subroutine rembo_update(time,dT_summer,z_srf,H_ice,dT_mon,co2)
   
     use emb_global
     use emb_functions
@@ -66,7 +66,7 @@ contains
     real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: dT_mon(12)      ! Monthly temperature anomalies
-    real(8), intent(IN), optional :: aco2_now        ! Global atmospheric CO2 concentation
+    real(8), intent(IN), optional :: co2             ! Global atmospheric CO2 concentation
 
     real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
     real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
@@ -75,6 +75,7 @@ contains
     real (8), dimension(ny,nx) :: restart_dh, restart_ap
     real (8), dimension(ny,nx) :: mask
     real (8) :: wt, pscalar, sfac
+    real (8) :: co2_now 
 
     character(len=10) :: c_dxs, dattype
     character(len=256) :: fnm, restart_folder
@@ -100,6 +101,23 @@ contains
       ! Get daily temperature anomalies from input T_summer and T_wintfac values
       call rembo_update_boundary_forcing_sin(T_anomaly,T_warming,dT_summer,dT_summer*T_wintfac,day_year)
     end if
+
+    if (present(co2)) then
+      co2_now = co2
+    else
+      co2_now = calc_co2(T_warming)
+    end if
+
+if (.FALSE.) then
+  ! ajr: check anomalies...
+    write(*,*) "T_warming: ", T_warming
+    write(*,*) "T_anomaly: "
+    do k = 1, nk
+      write(*,*) T_anomaly(k)
+    end do
+
+    stop 
+end if
 
     ! Kill program as needed (for fracs and other simulations)
     if ( kill .eq. 1 ) then
@@ -185,11 +203,9 @@ contains
       ! ! Determine amount of atmospheric co2 based on warming
       ! ! T_warming = T_global_mean_warming = T_greenland_summer_warming
       ! T_warming = deltaT(0)
-      ! aco2 = co2(T_warming)     
+      ! aco2 = calc_co2(T_warming)     
       
-      aco2 = co2(T_warming)
-
-      if (present(aco2_now)) aco2 = aco2_now 
+      aco2 = co2_now 
 
     end if
     
@@ -334,7 +350,7 @@ contains
           
           write(fnm,"(a11,i1,a3)") "rembo.gis.S",qq,".nc"
           call climchecker_new(trim(outfldr)//trim(fnm), &
-                              day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
+                              day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
           if ( time .eq. year0 ) init_summary2 = 0
         
         end do
@@ -344,7 +360,7 @@ contains
       mask = 0.d0
       where( m2 .eq. 0.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.gis.nc", &
-                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
       if ( time .eq. year0 ) init_summary2 = 0
       
 !!!   ! Kill condition for transient simulations (enough ice points and enough time passed)
@@ -354,7 +370,7 @@ contains
       mask = 0.d0
       where( m2 .le. 1.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.grl.nc", &
-                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,time)
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
       if ( time .eq. year0 ) init_summary2 = 0
       
       ! Write/calc comparison to observational fields
@@ -366,7 +382,7 @@ contains
         
     if (now%clim) then
       write(*,"(a1,5x,a10,f12.2)") "e","yearnow = ",yearnow
-      write(*,"(a1,5x,a10,f12.2)") "e","co2 = ",co2(T_warming)
+      write(*,"(a1,5x,a10,f12.2)") "e","co2 = ",co2_now
     end if
     
     call cpu_time(timer%now)                   ! get current time in seconds

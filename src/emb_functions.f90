@@ -19,8 +19,36 @@ module emb_functions
     real(8), intent(IN) :: day_month 
     real(8), intent(IN) :: day_year 
 
+    ! Local variables
+    integer :: k 
+    real(8) :: x(14)
+    real(8) :: y(14)
+    real(8) :: xout(nk)
+
+if (.TRUE.) then
+  ! Linear interpolation
+
     ! Calculate temperature anomaly for each day of the year
     call calc_daily_values(T_anomaly,T_monthly,day_month,day_year)
+
+else
+  ! Spline interpolation (to do - need to enforce consistency with monthly values...)
+
+    x = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0]
+    x = x*day_month - 15.0
+    y = [T_monthly(12),T_monthly(1:12),T_monthly(1)]
+    do k = 1, nk 
+      xout(k) = real(k)
+    end do
+
+    T_anomaly = interp_spline(x,y,xout)
+
+    write(*,*) "rembo_update_boundary_forcing_monthly"
+    write(*,*) "x = ", x 
+    write(*,*) "y = ", y
+    write(*,*)
+
+end if 
 
     ! Store summer mean value too
     T_warming = sum(T_monthly(6:8)) / 3d0
@@ -1289,9 +1317,9 @@ module emb_functions
   !               If boundary_forcing is active (1), then dT is ignored
   !               and co2 conc. is obtained from boundary forcing data
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  function co2(dT)
+  function calc_co2(dT)
     
-    real (8) :: co2, dT
+    real (8) :: calc_co2, dT
     
     real (8), parameter :: co2_0    = 280.d0
     real (8), parameter :: ln2      = dlog(2.d0)
@@ -1299,18 +1327,18 @@ module emb_functions
     if ( boundary_forcing .eq. 1 .or. boundary_forcing .eq. 3 ) then ! (co2 from file or climber)
       
       ! Get amount of CO2 from anomaly data
-      co2 = forcing_now%co2
+      calc_co2 = forcing_now%co2
       
     else if ( boundary_forcing .eq. 0 .or. boundary_forcing .eq. 2) then  ! (prescribed T_anomaly but not co2)
       
       ! First get amount of CO2 based on dT
-      co2 = co2_0 * dexp ( dT * ln2 / clim_sens )
+      calc_co2 = co2_0 * dexp ( dT * ln2 / clim_sens )
       
     end if
     
     return
 
-  end function co2
+  end function calc_co2
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  R c o 2

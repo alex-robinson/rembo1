@@ -684,7 +684,7 @@ contains
   ! Author     :  Alex Robinson
   ! Purpose    :  Output means/sums of variables for a given region
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,T_warming,T_anomaly,yearnow)
+  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,T_warming,T_anomaly,co2,yearnow)
     
     implicit none
     
@@ -693,11 +693,11 @@ contains
     
     character (len=*) :: fnm
     type(rembo_type)  :: d(:), m(:), a
-    real (8), dimension(ny,nx) :: mask, zs, lats, lons
+    real(8), dimension(ny,nx) :: mask, zs, lats, lons
     real(8), intent(IN) :: T_warming        ! Summer anomaly value
     real(8), intent(IN) :: T_anomaly(:)     ! Daily anomaly values
-
-    real (8) :: yearnow
+    real(8), intent(IN) :: co2
+    real(8), intent(IN) :: yearnow
     
     real (8), parameter :: ela_ebs = 100.d0   ! mm/a
     real (8), parameter :: area_conv = 1e-6*1e-6  ! m2=>km2=>1e6km2
@@ -918,10 +918,10 @@ contains
       
       if (km .eq. 13) dT = T_warming
       if (km .lt. 13) dT = T_anomaly(km*int(day_month)-15)
-      aco2 = co2(dT)
+      aco2 = co2
       
       dT_all(km)   = dT    
-      aco2_all(km) = aco2
+      aco2_all(km) = co2
     end do
     
     ! Use the forcing_now object to get dT without albedo amplification
