@@ -37,6 +37,7 @@ module rembo_sclimate
   public :: rembo_update 
   public :: rembo_class
   public :: rembo_ann
+  public :: rembo_write_restart
 
 contains 
 
@@ -110,6 +111,7 @@ contains
 
 if (.FALSE.) then
   ! ajr: check anomalies...
+    write(*,*) "co2_now:   ", co2_now
     write(*,*) "T_warming: ", T_warming
     write(*,*) "T_anomaly: "
     do k = 1, nk
@@ -297,42 +299,43 @@ end if
     ! Determine the current output index for restart file
     n_now = match(yearnow1,time_out_r*1d3)
 
-    if ( write_rembo_r .eq. 1 .and. yearnow1 .ne. year0 .and. n_now .ne. 0 ) then
-      call rembo_restart(yearnow1,m2,zs,day(nk),saved%pdds)  ! Write restart file  
-    end if
+    ! Obsolete, restart writing happens externally now.
+    ! if ( write_rembo_r .eq. 1 .and. yearnow1 .ne. year0 .and. n_now .ne. 0 ) then
+    !   call rembo_restart(yearnow1,m2,zs,day(nk),saved%pdds)  ! Write restart file  
+    ! end if
       
-    ! Now for fractional restart file
-    if ( write_rembo_r .eq. 2 ) then
+    ! ! Now for fractional restart file
+    ! if ( write_rembo_r .eq. 2 ) then
     
-      ! (Initialize tmp file, so rembo won't write restart file,
-      !  but has something to read)
-      if ( yearnow1 .ne. year0 ) then
-        open(99,file=trim(outfldr)//"tmp123456789",status="unknown")
-        write(99,*) "na"
-        close(99)
-      end if
+    !   ! (Initialize tmp file, so rembo won't write restart file,
+    !   !  but has something to read)
+    !   if ( yearnow1 .ne. year0 ) then
+    !     open(99,file=trim(outfldr)//"tmp123456789",status="unknown")
+    !     write(99,*) "na"
+    !     close(99)
+    !   end if
     
-      ! Get the filename from the tmp file written in sicopolis
-      open(99,file=trim(outfldr)//"tmp123456789",status="old")
-      read(99,"(a)") fnm; fnm = adjustl(fnm)
-      close(99)
+    !   ! Get the filename from the tmp file written in sicopolis
+    !   open(99,file=trim(outfldr)//"tmp123456789",status="old")
+    !   read(99,"(a)") fnm; fnm = adjustl(fnm)
+    !   close(99)
       
-      ! Check the filename, if it's good,
-      ! write to the restart file
-      if ( trim(fnm) .ne. "na" ) then
+    !   ! Check the filename, if it's good,
+    !   ! write to the restart file
+    !   if ( trim(fnm) .ne. "na" ) then
         
-        write(*,*) "Writing fractional restart file: "//trim(fnm)
+    !     write(*,*) "Writing fractional restart file: "//trim(fnm)
         
-        call rembo_restart(yearnow1,m2,zs,day(nk),saved%pdds,file=trim(fnm))  ! Write restart file
+    !     call rembo_restart(yearnow1,m2,zs,day(nk),saved%pdds,file=trim(fnm))  ! Write restart file
         
-        ! Wipe out filename in tmp file
-        open(99,file=trim(outfldr)//"tmp123456789",status="unknown")
-        write(99,*) "na"
-        close(99)
+    !     ! Wipe out filename in tmp file
+    !     open(99,file=trim(outfldr)//"tmp123456789",status="unknown")
+    !     write(99,*) "na"
+    !     close(99)
         
-      end if
+    !   end if
 
-    end if
+    ! end if
       
     ! Output various 1D files, by region
     !if ((time-year0) .eq. (time-year0)/dto_clim*dto_clim ) then
@@ -602,6 +605,38 @@ end if
     return 
 
   end subroutine rembo_set_time
+
+  subroutine rembo_write_restart(filename,time,z_srf,H_ice)
+
+    use emb_global
+    use rembo_main
+
+    implicit none
+
+    character(len=*), intent(IN) :: filename
+    double precision, intent(IN) :: time
+    double precision, intent(IN), optional :: z_srf(:,:)
+    double precision, intent(IN), optional :: H_ice(:,:)
+    
+    ! Local variables
+    double precision :: zs(nys,nxs)
+    double precision :: m2(nys,nxs)
+
+    if (present(z_srf) .and. present(H_ice)) then
+      ! Get transposed topo information
+      call rembo_get_topo(zs,m2,z_srf,H_ice)
+    else
+      ! Define fields from initial setup 
+      zs = fields0%zs 
+      m2 = fields0%m2 
+    end if 
+
+    ! Write restart file
+    call rembo_restart(filename,day(nk),m2,zs,time)
+
+    return
+
+  end subroutine rembo_write_restart
 
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l

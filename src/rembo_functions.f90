@@ -259,56 +259,37 @@ contains
   ! Author   :  Alex Robinson
   ! Purpose  :  Make a restart file for rembo
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo_restart(yearnow0,mask,zs,in,pdds,file)
+  subroutine rembo_restart(filename,rmbo,mask,zs,time)
     
     implicit none
     
+    character (len=*), intent(IN) :: filename
+    type(rembo_type) :: rmbo
+    double precision,  intent(IN) :: mask(:,:)
+    double precision,  intent(IN) :: zs(:,:)
+    double precision,  intent(IN) :: time 
+    
+    ! Local variables
     integer :: n
-    double precision :: yearnow, yearnow0
-    double precision, dimension(:,:) :: mask, zs,pdds
-    type(rembo_type) :: in
-    character (len=256) :: fnm, c_yr
-    character (len=*), optional :: file
+    double precision :: time_kyr
     
-    yearnow = dabs(yearnow0*1d-3) ! Get abs value of current year in ka
     
-    if ( yearnow .lt. 1.d0 .and. yearnow .ne. 0.d0 ) then
-      write(c_yr,"(a4,i1)") "000.",int(yearnow*10.d0)
-    else if ( yearnow .lt. 10.d0 ) then
-      write(c_yr,"(a2,i1)") "00",int(yearnow)
-    else if ( yearnow .lt. 100.d0 ) then
-      write(c_yr,"(a1,i2)") "0",int(yearnow)
-    else if ( yearnow .lt. 1000.d0 ) then
-      write(c_yr,"(i3)") int(yearnow)
-    else
-      write(c_yr,"(i4)") int(yearnow)
-    end if
-    
-    ! Add on bp designation if needed
-    if ( yearnow0 .lt. 0.d0 ) c_yr = "bp"//trim(c_yr)
-    
-    fnm = trim(outfldr)//"restart."//trim(c_yr)//".nc"
-    
-    ! Overwrite local naming convention if filename is given as argument
-    if ( present(file) ) fnm = trim(file)
+    time_kyr = dabs(time*1d-3) ! Get abs value of current year in kyr
     
     ! Initialize the file (if running in stand-alone mode)
-    if ( clim_coupled .eq. -1 ) then
-      call rembo_nc(fnm,"years",yearnow0, &
-                    sico_grid%lat*todegs,sico_grid%lon*todegs,sico_grid%x,sico_grid%y, &
-                    mask=mask,zs=zs)
-    end if
-    
+    call rembo_nc(filename,"years",time,sico_grid%lat*todegs,sico_grid%lon*todegs, &
+                                            sico_grid%x,sico_grid%y,mask=mask,zs=zs)
+                    
     ! Write the fields
-    call nc_write_t(fnm,"tt",   in%tt,   dim1="x",dim2="y",long_name="surface temperature (last day of year)")
-    call nc_write_t(fnm,"snowh",in%snowh,dim1="x",dim2="y",long_name="snow height (last day of year)")
-    call nc_write_t(fnm,"dh",   in%dh,   dim1="x",dim2="y",long_name="net melt (last day of year)",units="mm")
-    call nc_write_t(fnm,"pdds", pdds,    dim1="x",dim2="y",long_name="annual PDDs (for vegetation type)",units="PDD")
+    call nc_write_t(filename,"tt",   rmbo%tt,   dim1="x",dim2="y",long_name="surface temperature (last day of year)")
+    call nc_write_t(filename,"snowh",rmbo%snowh,dim1="x",dim2="y",long_name="snow height (last day of year)")
+    call nc_write_t(filename,"dh",   rmbo%dh,   dim1="x",dim2="y",long_name="net melt (last day of year)",units="mm")
+    !call nc_write_t(filename,"pdds", pdds,    dim1="x",dim2="y",long_name="annual PDDs (for vegetation type)",units="PDD")
         
     if ( ap_fixed .eq. 1 ) then
-      call nc_write_t(fnm,"ap",   in%ap0,  dim1="x",dim2="y",long_name="planetary albedo (last day of year)")
+      call nc_write_t(filename,"ap",   rmbo%ap0,  dim1="x",dim2="y",long_name="planetary albedo (last day of year)")
     else
-      call nc_write_t(fnm,"ap",   in%ap,   dim1="x",dim2="y",long_name="planetary albedo (last day of year)")
+      call nc_write_t(filename,"ap",   rmbo%ap,   dim1="x",dim2="y",long_name="planetary albedo (last day of year)")
     end if
 
     return
