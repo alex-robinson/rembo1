@@ -917,7 +917,7 @@ end if
       call nc_read_t(fnm,"snowh",fields0%snowh)
       call nc_read_t(fnm,"dh",   fields0%dh)
       call nc_read_t(fnm,"ap",   fields0%ap)
-      call nc_read_t(fnm,"pdds", fields0%pdds)
+      !call nc_read_t(fnm,"pdds", fields0%pdds)
       
       ! Turn off equilibration (since we are restarting!)
       equili = 0

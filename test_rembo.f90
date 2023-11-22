@@ -43,11 +43,6 @@ program emb_driver
     !call rembo_update(year0,T_summer)
     call rembo_update(year0,T_summer,dT_mon=T_mon,co2=co2)
     
-    ! Test writing a restart file
-    call rembo_write_restart("./rembo_restart.nc",year0)
-
-    stop 
-    
     n_step_max = yearf - year0
   
     ! ### Run iterations ###
@@ -62,7 +57,10 @@ program emb_driver
 
     end do 
 
-  
+    ! Write a restart file
+    call rembo_write_restart("./rembo_restart.nc",year0)
+
+    
 end program emb_driver
       
 
