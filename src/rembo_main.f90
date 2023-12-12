@@ -81,7 +81,7 @@ contains
   ! t0 [°C]      - surface temperature
   ! p0 [kg/m2-s] - precip rate
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)
+  subroutine rembo(yearnow,yearnow1,now,m2,zs,lats,lons,mrelax,aco2,T_warming,T_anomaly)
 
     implicit none
     
@@ -113,7 +113,8 @@ contains
     double precision, dimension(nk,nyl,nxl) :: S
     ! Hi-res
     double precision, dimension(ny,nx) :: m2, zs, zs_0, lats, lons, aco2, mmfac, pp_tmp, dzsp
-    
+    integer, dimension(ny,nx) :: mrelax
+
     type(choices) :: now
     
     ! Local boundary variables (can be modified for warming, etc)
@@ -248,12 +249,19 @@ contains
 !       call precip_grad(zs_0,dx,fields0%lats,dzsp,klat=p_k_lat,kfac=p_k_eastfrac)
 !       call tolores(dzsp,dzslp,rembo0%wtst,nrt,ratio)
       
-      ! Set relaxation term on grid according to m2
-      relaxt = 0.d0
-      where (m2l .eq. 2.d0)  relaxt = 1.d0       
-      relaxp = 0.d0
-      where (m2lp .eq. 2.d0) relaxp = 1.d0 
+      ! ! Set relaxation term on grid according to m2
+      ! relaxt = 0.d0
+      ! where (m2l .eq. 2.d0)  relaxt = 1.d0       
+      ! relaxp = 0.d0
+      ! where (m2lp .eq. 2.d0) relaxp = 1.d0 
       
+      ! Interpolate relaxation mask from high resolution input
+      call tolores(relaxt,dble(mrelax),rembo0%wtst,nrt,ratio)
+      where(relaxt .lt. 0.5d0) relaxt = 0.0d0
+      where(relaxt .ge. 0.5d0) relaxt = 1.0d0 
+
+      relaxp = relaxt 
+
       low%rrco2 = 0.d0
       if (co2_rad .ne. 0) then
         ! Get co2 concentration on lo-res grid, then

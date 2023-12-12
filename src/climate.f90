@@ -51,7 +51,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(time,dT_summer,z_srf,H_ice,dT_mon,co2)
+  subroutine rembo_update(time,dT_summer,z_srf,H_ice,z_sl,mask_relax,dT_mon,co2)
   
     use emb_global
     use emb_functions
@@ -62,12 +62,14 @@ contains
     integer, parameter :: nx=nxs, ny=nys
     real (8), parameter :: dx=dxs
     
-    real(8), intent(IN) :: time                      ! Current external driver time
-    real(8), intent(IN) :: dT_summer                 ! Summer temp anomaly [K]
-    real(8), intent(IN), optional :: z_srf(nx,ny)    ! Input from ice-sheet model or data
-    real(8), intent(IN), optional :: H_ice(nx,ny)    ! Input from ice-sheet model or data
-    real(8), intent(IN), optional :: dT_mon(12)      ! Monthly temperature anomalies
-    real(8), intent(IN), optional :: co2             ! Global atmospheric CO2 concentation
+    real(8), intent(IN) :: time                         ! Current external driver time
+    real(8), intent(IN) :: dT_summer                    ! Summer temp anomaly [K]
+    real(8), intent(IN), optional :: z_srf(nx,ny)       ! Input from ice-sheet model or data
+    real(8), intent(IN), optional :: H_ice(nx,ny)       ! Input from ice-sheet model or data
+    real(8), intent(IN), optional :: z_sl(nx,ny)        ! Input from ice-sheet model or data
+    integer, intent(IN), optional :: mask_relax(nx,ny)  ! Relaxation mask
+    real(8), intent(IN), optional :: dT_mon(12)         ! Monthly temperature anomalies
+    real(8), intent(IN), optional :: co2                ! Global atmospheric CO2 concentation
 
     real (8), dimension(ny,nx) :: m2, zs, lats, lons, aco2
     real (8), dimension(ny,nx) :: ZZ, tma, tmj, ampl
@@ -75,6 +77,7 @@ contains
     real (8), dimension(ny,nx) :: restart_snowh
     real (8), dimension(ny,nx) :: restart_dh, restart_ap
     real (8), dimension(ny,nx) :: mask
+    integer,  dimension(ny,nx) :: mrelax
     real (8) :: wt, pscalar, sfac
     real (8) :: co2_now 
 
@@ -183,10 +186,10 @@ end if
       ! ================================================
       ! remboyelmo 
 
-      if (present(z_srf) .and. present(H_ice)) then 
+      if (present(z_srf) .and. present(H_ice) .and. present(z_sl)) then 
         ! Update fields from external model (zs and m2), if available
         
-        call rembo_get_topo(zs,m2,z_srf,H_ice)
+        call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
 
       else 
         ! Define fields from initial setup 
@@ -195,6 +198,28 @@ end if
         m2 = fields0%m2 
         
       end if 
+
+      ! Define relaxation mask
+      if (present(mask_relax)) then
+
+        ! Transpose the input relaxation mask
+        do j = 1, ny
+        do i = 1, nx
+          mrelax(j,i) = mask_relax(i,j)
+        end do
+        end do
+
+      else
+
+        ! Define relaxation mask based on m2
+        mrelax = 0
+        where (m2 .eq. 2) mrelax = 1
+        mrelax(1,:)  = 1
+        mrelax(ny,:) = 1
+        mrelax(:,1)  = 1
+        mrelax(:,nx) = 1
+        
+      end if
 
       ! ================================================
       
@@ -226,7 +251,7 @@ end if
         ! until it approaches equilibrium
         now%clim = .TRUE.; now%smb = .TRUE.
         do qq = 1, n_equili
-          call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)
+          call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,mrelax,aco2,T_warming,T_anomaly)
           write(*,*) "rembo equili, ",qq
         end do
         
@@ -240,7 +265,7 @@ end if
       end if
                 
       ! Call the energy-moisture balance module (output sent to variable "saved")  
-      call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,aco2,T_warming,T_anomaly)      
+      call rembo(yearnow,yearnow1,now,m2,zs,lats,lons,mrelax,aco2,T_warming,T_anomaly)      
 
     else   ! climchoice=0 => bilinear interp + data 
       
@@ -552,7 +577,7 @@ end if
 
   end subroutine rembo_init
 
-  subroutine rembo_get_topo(zs,m2,z_srf,H_ice)
+  subroutine rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
 
     implicit none 
 
@@ -560,15 +585,18 @@ end if
     real(8), intent(OUT) :: m2(:,:)      ! [ny,nx]
     real(8), intent(IN)  :: z_srf(:,:)   ! [nx,ny]
     real(8), intent(IN)  :: H_ice(:,:)   ! [nx,ny] 
+    real(8), intent(IN)  :: z_sl(:,:)    ! [nx,ny] 
 
     ! Local variables 
     integer :: i, j, nx, ny 
     real(8), allocatable :: Hi(:,:)  
+    real(8), allocatable :: zsl(:,:)  
 
     nx = size(zs,2)
     ny = size(zs,1) 
 
     allocate(Hi(ny,nx)) 
+    allocate(zsl(ny,nx))
 
     ! Update fields from external model (zs and m2), if available
     ! (transposed i,j => j,i)
@@ -582,13 +610,16 @@ end if
       ! Update ice thickness 
       Hi(j,i) = H_ice(i,j) 
 
+      ! Update sea level
+      zsl(j,i) = z_sl(i,j)
+
     end do 
     end do 
 
     ! Set ice(0)/land(1)/ocean(2) mask
     m2 = 0.0
-    where(zs .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
-    where(zs .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
+    where( (zs-zsl) .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
+    where( (zs-zsl) .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
       
     return 
 
@@ -606,7 +637,7 @@ end if
 
   end subroutine rembo_set_time
 
-  subroutine rembo_write_restart(filename,time,z_srf,H_ice)
+  subroutine rembo_write_restart(filename,time,z_srf,H_ice,z_sl)
 
     use emb_global
     use rembo_main
@@ -617,14 +648,15 @@ end if
     double precision, intent(IN) :: time
     double precision, intent(IN), optional :: z_srf(:,:)
     double precision, intent(IN), optional :: H_ice(:,:)
+    double precision, intent(IN), optional :: z_sl(:,:)
     
     ! Local variables
     double precision :: zs(nys,nxs)
     double precision :: m2(nys,nxs)
 
-    if (present(z_srf) .and. present(H_ice)) then
+    if (present(z_srf) .and. present(H_ice) .and. present(z_sl)) then
       ! Get transposed topo information
-      call rembo_get_topo(zs,m2,z_srf,H_ice)
+      call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
     else
       ! Define fields from initial setup 
       zs = fields0%zs 
