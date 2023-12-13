@@ -848,7 +848,7 @@ end if
 
     integer, parameter :: nx = nxs, ny = nys
     real (8), dimension(ny,nx) :: accum, precip
-    real (8), dimension(ny,nx) :: m2, zs, zb, lats, lons, zb0
+    real (8), dimension(ny,nx) :: m2, zs, zb, zsl, lats, lons, zb0
     real (8), dimension(ny,nx) :: mask_hydro
     real (8), dimension(ny,nx) :: H_ice 
     character (len=256) :: fnm
@@ -885,18 +885,21 @@ end if
     call nc_read_t(fnm,"lat2D", lats)
     call nc_read_t(fnm,"lon2D", lons)
     call nc_read_t(fnm,"z_srf", zs)
+    call nc_read_t(fnm,"H_ice",H_ice)
     call nc_read_t(fnm,"z_bed", zb)
     !call nc_read_t(fnm,"zb0", zb0)
     zb0 = zb 
     
-    ! Set ice(0)/land(1)/ocean(2) mask
-    call nc_read_t(fnm,"H_ice",H_ice)
-    m2 = 0.0
-    where(zs .gt. 0.0 .and. H_ice .eq. 0.0) m2 = 1.0 
-    where(zs .le. 0.0 .and. H_ice .eq. 0.0) m2 = 2.0  
+    ! Set sea level to zero for now
+    zsl = 0.0 
 
     ! Load a different topography as desired (based on parameter choices)
-    call emb_load_topo(H_ice,zb,zs,m2,path_par)
+    call emb_load_topo(H_ice,zb,zs,path_par)
+
+    ! Set ice(0)/land(1)/ocean(2) mask
+    m2 = 0.0
+    where( (zs-zsl) .gt. 0.0 .and. H_ice .eq. 0.0) m2 = 1.0 
+    where( (zs-zsl) .le. 0.0 .and. H_ice .eq. 0.0) m2 = 2.0  
 
     ! Load the hydrological basin
     !call nc_read_t(fnm,"mask_hydro",mask_hydro)
@@ -984,7 +987,7 @@ end if
   end subroutine emb_load_input
   
 
-  subroutine emb_load_topo(H_ice,z_bed,z_srf,mask,filename)
+  subroutine emb_load_topo(H_ice,z_bed,z_srf,filename)
         ! This subroutine is the first step to intializing 
         ! the state variables. It initializes only the topography
         ! to facilitate calculation of boundary variables (eg, T_srf),
@@ -999,7 +1002,6 @@ end if
         real(8), intent(OUT) :: H_ice(:,:) 
         real(8), intent(OUT) :: z_bed(:,:) 
         real(8), intent(OUT) :: z_srf(:,:) 
-        real(8), intent(OUT) :: mask(:,:)
         character(len=*),  intent(IN) :: filename  
 
         ! Local variables 
@@ -1037,18 +1039,12 @@ end if
 
           call calc_z_srf_max(z_srf,H_ice,z_bed,dble(0.0),rho_ice,rho_sw)
 
-          ! Calculate mask
-          mask = 0.0
-          where(z_srf .gt. 0.0 .and. H_ice .eq. 0.0) mask = 1.0 
-          where(z_srf .le. 0.0 .and. H_ice .eq. 0.0) mask = 2.0  
-
           ! Summary for log file: 
 
           write(*,*) "emb_load_topo:: range(z_bed):     ", minval(z_bed), maxval(z_bed)
           write(*,*) "emb_load_topo:: range(H_ice):     ", minval(H_ice), maxval(H_ice) 
           write(*,*) "emb_load_topo:: range(z_srf):     ", minval(z_srf), maxval(z_srf)
-          write(*,*) "emb_load_topo:: range(mask):      ", minval(mask),  maxval(mask)
-        
+
         else
 
           write(*,*) "emb_load_topo:: specific topography not loaded."

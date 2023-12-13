@@ -283,7 +283,8 @@ end if
       
       !! Output cntro file
       call rembo_nc(trim(outfldr)//"clima.cntro.nc","years",yearnow1, &
-                lats*todegs,lons*todegs,sico_grid%x,sico_grid%y,mask_hydro=fields0%mask_hydro)
+                lats*todegs,lons*todegs,sico_grid%x,sico_grid%y,mask_hydro=fields0%mask_hydro, &
+                mask_relax=mrelax)
       call rembo_nc_write(trim(outfldr)//"clima.cntro.nc",ann,1,yearnow1,mask=m2,zs=zs, &
                       tjja=saved%tjja, tdjf=saved%tdjf,ttp=saved%ttp, &
 !                       pkappa=saved%pkappa,qqfac=fields0%qqfac, &
@@ -301,7 +302,8 @@ end if
       if ( write_rembo_m .eq. 1 ) then
         
         call rembo_nc(trim(outfldr)//"climm.cntro.nc","months",time_out_mon(1),lats*todegs,lons*todegs, &
-                      sico_grid%x,sico_grid%y,mask=m2,zs=zs)
+                      sico_grid%x,sico_grid%y,mask=m2,zs=zs, &
+                mask_relax=mrelax)
           
         do k = 1, nm
           call rembo_nc_write(trim(outfldr)//"climm.cntro.nc",mon(k),k,time_out_mon(k))
@@ -312,7 +314,8 @@ end if
       if ( write_rembo_d .eq. 1 ) then      ! Write daily output
         ! The same bug applies as above in the monthly file!!
         call rembo_nc(trim(outfldr)//"climd.cntro.nc","days",time_out_day(1),lats*todegs,lons*todegs, &
-                      sico_grid%x,sico_grid%y,mask=m2,zs=zs)
+                      sico_grid%x,sico_grid%y,mask=m2,zs=zs, &
+                mask_relax=mrelax)
           
         do k = 1, nk
           call rembo_nc_write(trim(outfldr)//"climd.cntro.nc",day(k),k,time_out_day(k))
@@ -549,7 +552,7 @@ end if
         
         ! Initialize output nc file
         call rembo_nc(trim(outfldr)//"clima.nc","years",time_out(1)*1d3, &
-                      lats*todegs,lons*todegs,sico_grid%x,sico_grid%y,mask_hydro=fields0%mask_hydro)  
+                      lats*todegs,lons*todegs,sico_grid%x,sico_grid%y,mask_hydro=fields0%mask_hydro)
                           
         init_rembo = 1
 

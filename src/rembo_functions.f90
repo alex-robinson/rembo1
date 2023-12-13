@@ -105,12 +105,13 @@ contains
   ! Author   :  Alex Robinson
   ! Purpose  :  Initialize netcdf output for rembo
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo_nc(fnm,units,t0,lat,lon,xx,yy,mask,mask_hydro,zs)
+  subroutine rembo_nc(fnm,units,t0,lat,lon,xx,yy,mask,mask_hydro,mask_relax,zs)
     
     implicit none
     
     double precision, dimension(:,:) :: lat, lon, xx, yy
     double precision, dimension(:,:),optional :: mask, mask_hydro, zs
+    integer, optional :: mask_relax(:,:)
     character (len=*) :: fnm, units
     double precision :: t0
     
@@ -130,6 +131,7 @@ contains
     
     if (present(mask))       call nc_write_t(fnm,"mask",mask,dim1="x",dim2="y")
     if (present(mask_hydro)) call nc_write_t(fnm,"mask_hydro",mask_hydro,dim1="x",dim2="y")
+    if (present(mask_relax)) call nc_write_t(fnm,"mask_relax",dble(mask_relax),dim1="x",dim2="y")
     if (present(zs))         call nc_write_t(fnm,"zs",  zs,dim1="x",dim2="y")
     
     return
@@ -141,13 +143,14 @@ contains
   ! Author   :  Alex Robinson
   ! Purpose  :  Output timestep of netcdf output for rembo
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine rembo_nc_write(fnm,vars,ndat,time,mask,mask_hydro,zs,tjja,tdjf,ttp,rf, &
+  subroutine rembo_nc_write(fnm,vars,ndat,time,mask,mask_hydro,mask_relax,zs,tjja,tdjf,ttp,rf, &
                             refrozen,pkappa,qqfac,pdds,write_mon)
     
     implicit none
     
     type(rembo_type) :: vars
     double precision, dimension(:,:), optional :: mask, mask_hydro, zs, tjja, tdjf, ttp
+    integer, optional :: mask_relax(:,:)
     double precision, dimension(:,:), optional :: rf, refrozen,pkappa,qqfac, pdds
     logical, optional :: write_mon
 
@@ -162,6 +165,7 @@ contains
     if (present(mask))       call nc_write_t(fnm,"mask",      mask,      dim1="x",dim2="y",dim3="time", &
                                             start=[1,1,1],count=[nxs,nys,1])
     if (present(mask_hydro)) call nc_write_t(fnm,"mask_hydro",mask_hydro,dim1="x",dim2="y")
+    if (present(mask_hydro)) call nc_write_t(fnm,"mask_relax",dble(mask_relax),dim1="x",dim2="y")
     if (present(zs))         call nc_write_t(fnm,"zs",        zs  ,      dim1="x",dim2="y",dim3="time", &
                                             start=[1,1,1],count=[nxs,nys,1])
     
