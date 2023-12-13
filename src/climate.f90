@@ -23,6 +23,8 @@ module rembo_sclimate
     double precision, allocatable :: T_djf(:,:) 
     double precision, allocatable :: pdds(:,:)
 
+    integer, allocatable :: mask_relax(:,:)
+
     double precision :: time_emb, time_smb
     double precision :: dt_emb,   dt_smb
     
@@ -450,8 +452,11 @@ if (.TRUE.) then
         rembo_ann%T_pann(i,j) = saved(j,i)%ttp  + 273.15   ! [degC] => [K]
         rembo_ann%T_jja(i,j)  = saved(j,i)%tjja + 273.15   ! [degC] => [K]
         rembo_ann%T_djf(i,j)  = saved(j,i)%tdjf + 273.15   ! [degC] => [K]
+        
         rembo_ann%pdds(i,j)   = saved(j,i)%pdds 
 
+        ! Relaxation mask
+        rembo_ann%mask_relax(i,j) = mrelax(j,i)
       end do 
       end do 
 
@@ -515,6 +520,7 @@ end if
       allocate(rembo_ann%T_jja(nx,ny))
       allocate(rembo_ann%T_djf(nx,ny))
       allocate(rembo_ann%pdds(nx,ny))
+      allocate(rembo_ann%mask_relax(nx,ny))
 
       rembo_ann%pr     = 0.0 
       rembo_ann%sf     = 0.0 
@@ -529,6 +535,7 @@ end if
       rembo_ann%T_jja  = 0.0 
       rembo_ann%T_djf  = 0.0 
       rembo_ann%pdds   = 0.0 
+      rembo_ann%mask_relax = 0 
 
       ! ================================================
 
