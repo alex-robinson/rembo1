@@ -53,7 +53,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(time,dT_summer,z_srf,H_ice,z_sl,mask_relax,dT_mon,co2)
+  subroutine rembo_update(time,dT_summer,z_srf,H_ice,mask_relax,dT_mon,co2)
   
     use emb_global
     use emb_functions
@@ -68,7 +68,7 @@ contains
     real(8), intent(IN) :: dT_summer                    ! Summer temp anomaly [K]
     real(8), intent(IN), optional :: z_srf(nx,ny)       ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: H_ice(nx,ny)       ! Input from ice-sheet model or data
-    real(8), intent(IN), optional :: z_sl(nx,ny)        ! Input from ice-sheet model or data
+    !real(8), intent(IN), optional :: z_sl(nx,ny)        ! Input from ice-sheet model or data
     integer, intent(IN), optional :: mask_relax(nx,ny)  ! Relaxation mask
     real(8), intent(IN), optional :: dT_mon(12)         ! Monthly temperature anomalies
     real(8), intent(IN), optional :: co2                ! Global atmospheric CO2 concentation
@@ -188,10 +188,12 @@ end if
       ! ================================================
       ! remboyelmo 
 
-      if (present(z_srf) .and. present(H_ice) .and. present(z_sl)) then 
+      !if (present(z_srf) .and. present(H_ice) .and. present(z_sl)) then
+      if (present(z_srf) .and. present(H_ice)) then 
         ! Update fields from external model (zs and m2), if available
         
-        call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+        !call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+        call rembo_get_topo(zs,m2,z_srf,H_ice)
 
       else 
         ! Define fields from initial setup 
@@ -587,7 +589,7 @@ end if
 
   end subroutine rembo_init
 
-  subroutine rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+  subroutine rembo_get_topo(zs,m2,z_srf,H_ice)
 
     implicit none 
 
@@ -595,18 +597,18 @@ end if
     real(8), intent(OUT) :: m2(:,:)      ! [ny,nx]
     real(8), intent(IN)  :: z_srf(:,:)   ! [nx,ny]
     real(8), intent(IN)  :: H_ice(:,:)   ! [nx,ny] 
-    real(8), intent(IN)  :: z_sl(:,:)    ! [nx,ny] 
+    !real(8), intent(IN)  :: z_sl(:,:)    ! [nx,ny] 
 
     ! Local variables 
     integer :: i, j, nx, ny 
     real(8), allocatable :: Hi(:,:)  
-    real(8), allocatable :: zsl(:,:)  
+    !real(8), allocatable :: zsl(:,:)  
 
     nx = size(zs,2)
     ny = size(zs,1) 
 
     allocate(Hi(ny,nx)) 
-    allocate(zsl(ny,nx))
+    !allocate(zsl(ny,nx))
 
     ! Update fields from external model (zs and m2), if available
     ! (transposed i,j => j,i)
@@ -621,15 +623,17 @@ end if
       Hi(j,i) = H_ice(i,j) 
 
       ! Update sea level
-      zsl(j,i) = z_sl(i,j)
+      !zsl(j,i) = z_sl(i,j)
 
     end do 
     end do 
 
     ! Set ice(0)/land(1)/ocean(2) mask
     m2 = 0.0
-    where( (zs-zsl) .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
-    where( (zs-zsl) .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
+    ! where( (zs-zsl) .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
+    ! where( (zs-zsl) .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
+    where( zs .gt. 0.0 .and. Hi .eq. 0.0) m2 = 1.0 
+    where( zs .le. 0.0 .and. Hi .eq. 0.0) m2 = 2.0  
       
     return 
 
@@ -647,7 +651,7 @@ end if
 
   end subroutine rembo_set_time
 
-  subroutine rembo_write_restart(filename,time,z_srf,H_ice,z_sl)
+  subroutine rembo_write_restart(filename,time,z_srf,H_ice)
 
     use emb_global
     use rembo_main
@@ -658,15 +662,16 @@ end if
     double precision, intent(IN) :: time
     double precision, intent(IN), optional :: z_srf(:,:)
     double precision, intent(IN), optional :: H_ice(:,:)
-    double precision, intent(IN), optional :: z_sl(:,:)
+    !double precision, intent(IN), optional :: z_sl(:,:)
     
     ! Local variables
     double precision :: zs(nys,nxs)
     double precision :: m2(nys,nxs)
 
-    if (present(z_srf) .and. present(H_ice) .and. present(z_sl)) then
+    if (present(z_srf) .and. present(H_ice)) then
       ! Get transposed topo information
-      call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+      !call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+      call rembo_get_topo(zs,m2,z_srf,H_ice)
     else
       ! Define fields from initial setup 
       zs = fields0%zs 
