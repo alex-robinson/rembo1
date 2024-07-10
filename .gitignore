@@ -8,3 +8,5 @@ ice_data
 output
 .obj
 *.x
+libs/coordinates*
+libs/lis*

@@ -1,0 +1,27 @@
+FC  = ifx
+
+NETCDFC_ROOT = /albedo/soft/sw/spack-sw/netcdf-c/4.8.1-5ewdrxn
+NETCDFFI_ROOT = /albedo/soft/sw/spack-sw/netcdf-fortran/4.5.4-rujc52i
+# NetCDF
+INC_NC  = -I${NETCDFFI_ROOT}/include
+# the -rpath options ensure that the same shared libraries are found at runtime
+LIB_NC  = -L${NETCDFFI_ROOT}/lib -Wl\,-rpath=${NETCDFFI_ROOT}/lib -lnetcdff -L${NETCDFC_ROOT}/lib -Wl\,-rpath=${NETCDFC_ROOT}/lib -lnetcdf
+
+COORDROOT = libs/coordinates
+INC_COORD = -I${COORDROOT}/libcoordinates/include
+LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
+
+LISROOT = libs/lis
+INC_LIS = -I${LISROOT}/include 
+LIB_LIS = -L${LISROOT}/lib/ -llis
+
+YELMOROOT = yelmo/libyelmo
+INC_YELMO = -I${YELMOROOT}/include 
+LIB_YELMO = -L${YELMOROOT}/include -lyelmo
+
+FFLAGS  = -no-wrap-margin -module $(objdir) -L$(objdir) $(INC_YELMO) $(INC_COORD)
+LFLAGS  = -Wl,-zmuldefs $(LIB_YELMO) $(LIB_COORD) $(LIB_NC) $(LIB_LIS) 
+
+DFLAGS_NODEBUG = -O2 -fp-model precise
+DFLAGS_DEBUG   = -C -traceback -ftrapuv -fpe0 -check all -fp-model precise
+DFLAGS_PROFILE = -O2 -fp-model precise -pg

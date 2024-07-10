@@ -5,11 +5,11 @@ NC_FROOT=/opt/homebrew/Cellar/netcdf-fortran/4.6.1
 INC_NC  = -I${NC_FROOT}/include
 LIB_NC  = -L${NC_FROOT}/lib -lnetcdff -L${NC_CROOT}/lib -lnetcdf
 
-COORDROOT = /Users/robinson/models/EURICE/coordinates/libcoordinates
-INC_COORD = -I${COORDROOT}/include
-LIB_COORD = -L${COORDROOT}/include -lcoordinates
+COORDROOT = libs/coordinates
+INC_COORD = -I${COORDROOT}/libcoordinates/include
+LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
-LISROOT = /Users/alrobi001/apps/lis/lis
+LISROOT = libs/lis
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
