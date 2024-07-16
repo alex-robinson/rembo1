@@ -3,20 +3,17 @@ FC  = ifort
 INC_NC  = -I${NETCDF_FORTRANROOT}/include
 LIB_NC  = -L${NETCDF_FORTRANROOT}/lib -lnetcdff -L${NETCDF_CROOT}/lib -lnetcdf
 
-COORDROOT = /home/robinson/apps/coordinates/libcoordinates
-INC_COORD = -I${COORDROOT}/include
-LIB_COORD = -L${COORDROOT}/include -lcoordinates
-
-#LIB_MKL = -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
-#$(LIB_ML) -Wl,-zmuldefs
+COORDROOT = /home/robinson/apps/coordinates
+INC_COORD = -I${COORDROOT}/libcoordinates/include
+LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
 LISROOT = /home/robinson/apps/lis/lis
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
-YELMOROOT = yelmo/libyelmo
-INC_YELMO = -I${YELMOROOT}/include 
-LIB_YELMO = -L${YELMOROOT}/include -lyelmo
+YELMOROOT = yelmo
+INC_YELMO = -I${YELMOROOT}/libyelmo/include 
+LIB_YELMO = -L${YELMOROOT}/libyelmo/include -lyelmo
 
 FFLAGS  = -no-wrap-margin -module $(objdir) -L$(objdir) $(INC_YELMO) $(INC_COORD)
 LFLAGS  = -Wl,-zmuldefs $(LIB_YELMO) $(LIB_COORD) $(LIB_NC) $(LIB_LIS) 

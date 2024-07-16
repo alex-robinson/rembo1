@@ -9,7 +9,7 @@ COORDROOT = libs/coordinates
 INC_COORD = -I${COORDROOT}/libcoordinates/include
 LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
-LISROOT = libs/lis
+LISROOT = libs/exlib/lis-omp
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
