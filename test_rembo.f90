@@ -67,8 +67,7 @@ program emb_driver
 
     ! Update REMBO, with ice sheet topography    
     !call rembo_update(year0,T_summer)
-    !call rembo_update(year0,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2)
-    call rembo_update(year0,T_summer,z_srf,H_ice,dT_mon=T_mon,co2=co2)
+    call rembo_update(year0,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2)
     
     n_step_max = yearf - year0
   
@@ -76,8 +75,7 @@ program emb_driver
     do n_step = 1, n_step_max    ! in years
 
         ! call REMBO1
-        !call rembo_update(year0+n_step,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2) 
-        call rembo_update(year0+n_step,T_summer,z_srf,H_ice,dT_mon=T_mon,co2=co2) 
+        call rembo_update(year0+n_step,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2) 
               
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)
