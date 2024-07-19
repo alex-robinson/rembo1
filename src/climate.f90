@@ -195,18 +195,20 @@ end if
       ! ================================================
       ! remboyelmo 
 
-      if (present(z_srf) .and. present(H_ice)) then 
-        ! Update fields from external model (zs and m2), if available
+      ! if (present(z_srf) .and. present(H_ice)) then 
+      !   ! Update fields from external model (zs and m2), if available
         
-        call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+      !   call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
 
-      else 
-        ! Define fields from initial setup 
+      ! else 
+      !   ! Define fields from initial setup 
 
-        zs = fields0%zs 
-        m2 = fields0%m2 
+      !   zs = fields0%zs 
+      !   m2 = fields0%m2 
         
-      end if 
+      ! end if 
+      zs = fields0%zs 
+      m2 = fields0%m2 
 
       ! Define relaxation mask
       if (present(mask_relax)) then

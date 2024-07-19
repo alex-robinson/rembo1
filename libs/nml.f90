@@ -105,7 +105,7 @@ contains
         inquire(file=trim(filename),NUMBER=file_unit)
         if (file_unit .eq. -1) then
             ! Open a connection to the file 
-            open(unit=newunit(io),file=trim(filename),status="old",iostat=iostat)
+            open(newunit=io,file=trim(filename),status="old",iostat=iostat)
             if (iostat /= 0) then 
                 write(*,*) "nml:: namelist file could not be opened: "//trim(filename)
                 stop 
@@ -115,7 +115,6 @@ contains
             io = file_unit 
             rewind(io)
         end if 
- 
         
         ingroup     = .FALSE. 
         found_param = .FALSE. 
@@ -939,7 +938,7 @@ contains
 
         implicit none 
 
-        integer, intent(out), optional :: unit
+        integer, intent(in), optional :: unit
 
         ! Local variables
         integer, parameter :: LUN_MIN=10, LUN_MAX=1000
@@ -958,7 +957,7 @@ contains
         end do
 
         ! Assign new unit if desired
-        if (present(unit)) unit=newunit
+        if (present(unit)) newunit=unit
 
         return 
 

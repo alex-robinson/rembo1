@@ -80,21 +80,21 @@ contains
     
     call nc_write(fnm,"time",ndat,dim1="time",start=[ndat],count=[1])   ! ka => years
     
-    call nc_write(fnm,"tt",       vars%tt,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"pp",       vars%pp,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"qq",       vars%qq,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"rhum",     vars%rhum,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"S",        vars%S,   dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"co2",      vars%co2, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"ap",       vars%ap,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"apS",      vars%apS, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"ABT",      vars%ABT, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"d2T",      vars%d2T, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"Lr",       vars%Lr,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"Ls",       vars%Ls,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"Ldh",      vars%Ldh, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"tt",       vars%tt,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"pp",       vars%pp,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"qq",       vars%qq,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"rhum",     vars%rhum,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"S",        vars%S,   dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"co2",      vars%co2, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"ap",       vars%ap,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"apS",      vars%apS, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"ABT",      vars%ABT, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"d2T",      vars%d2T, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"Lr",       vars%Lr,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"Ls",       vars%Ls,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"Ldh",      vars%Ldh, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
 
     return
     

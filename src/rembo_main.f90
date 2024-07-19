@@ -373,7 +373,7 @@ contains
     end if
     
     timer%boundary = 0.d0
-    
+
     ! #############################################################
     ! #### Main loop over all the days of the year (dt = days) ####
     do kd = 1, nk
@@ -416,7 +416,7 @@ contains
         
         ! Adjust kappa as desired
         kappa_p = p_kappa * pkfac
-          
+        
         ! #### solve energy-moisture balances ####
         do iter = 1, rembo0%niter  ! iterate to complete 1 day
           
@@ -487,7 +487,6 @@ contains
         !yearnow1 = time 
 
         if ( write_emb_d .eq. 1 .and. match(yearnow1,time_out*1d3) .ne. 0 ) then
-
           if ( kd .eq. 1 ) then
             call emb_nc(trim(outfldr)//"embd.nc",t0=dble(kd),units="days", &
                         lat=rembo0%lats*todegs,lon=rembo0%lons*todegs, &
