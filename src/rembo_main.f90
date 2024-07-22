@@ -256,7 +256,7 @@ contains
       ! where (m2lp .eq. 2.d0) relaxp = 1.d0 
       
       ! Interpolate relaxation mask from high resolution input
-      call tolores(relaxt,dble(mrelax),rembo0%wtst,nrt,ratio)
+      call tolores(dble(mrelax),relaxt,rembo0%wtst,nrt,ratio)
       where(relaxt .lt. 0.5d0) relaxt = 0.0d0
       where(relaxt .ge. 0.5d0) relaxt = 1.0d0 
 
