@@ -39,7 +39,7 @@ module rembo_sclimate
   public :: rembo_update 
   public :: rembo_class
   public :: rembo_ann
-  public :: rembo_write_restart
+  public :: rembo_restart_write
 
 contains 
 
@@ -660,7 +660,7 @@ end if
 
   end subroutine rembo_set_time
 
-  subroutine rembo_write_restart(filename,time,z_srf,H_ice,z_sl)
+  subroutine rembo_restart_write(filename,time,z_srf,H_ice,z_sl)
 
     use emb_global
     use rembo_main
@@ -691,7 +691,7 @@ end if
 
     return
 
-  end subroutine rembo_write_restart
+  end subroutine rembo_restart_write
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l

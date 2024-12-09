@@ -84,7 +84,7 @@ program emb_driver
 
 
     ! Write a restart file
-    call rembo_write_restart("./rembo_restart.nc",year0)
+    call rembo_restart_write("./rembo_restart.nc",year0)
 
 
 contains
