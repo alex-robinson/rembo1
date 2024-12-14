@@ -913,7 +913,7 @@ end if
       ! Get main topo variables
       call nc_read_t(fnm,"mask", m2)
       call nc_read_t(fnm,"zs",   zs)
-      call nc_read_t(fnm,"zb",   zb)
+      !call nc_read_t(fnm,"zb",   zb)
       
       ! read climate variables first
       call nc_read_t(fnm,"tt",   fields0%tt)
