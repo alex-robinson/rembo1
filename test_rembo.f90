@@ -9,8 +9,9 @@ program emb_driver
     integer :: n_step, n_step_max 
     double precision :: timer_start, timer_tot
 
-    real(8) :: year0
-    real(8) :: yearf 
+    real(8) :: time_init
+    real(8) :: time_end 
+    real(8) :: time_ins
     real(8) :: T_summer 
     real(8) :: T_mon(12)
     real(8) :: co2 
@@ -20,31 +21,33 @@ program emb_driver
     real(8), allocatable :: H_ice(:,:)
     real(8), allocatable :: z_sl(:,:)
     real(8), allocatable :: reg_mask(:,:)
+
+    ! Get start time in seconds
+    call cpu_time(timer_start) 
     
     write(*,*)
     write(*,*) "  *** 2D Diffusion: Temperature and precipitation ***"
     write(*,*) "                   over Greenland" 
     write(*,*)
     
-    ! Get start time in seconds
-    call cpu_time(timer_start) 
-  
-    ! Initialize the climate model REMBO, including loading parameters from options_rembo 
-    call rembo_init(year0)
-    call timing(0,timer_start,timer_tot)
-    
     ! Read in parameters
-    call nml_read("rembo_Greenland.nml","ctrl","year0",      year0)
-    call nml_read("rembo_Greenland.nml","ctrl","yearf",      yearf)
+    call nml_read("rembo_Greenland.nml","ctrl","time_init",  time_init)
+    call nml_read("rembo_Greenland.nml","ctrl","time_end",   time_end)
+    call nml_read("rembo_Greenland.nml","ctrl","time_ins",   time_ins)
     call nml_read("rembo_Greenland.nml","ctrl","T_summer",   T_summer)
     
-    !year0    = 0.0 
-    !yearf    = 10.0 
-    !T_summer = 5.0 
-    !T_mon    = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0,1.0]
-    !T_summer = 0.0
-    T_mon    = 0.0
-    co2      = 350.0 
+    ! Initialize the climate model REMBO, including loading parameters from options_rembo 
+    call rembo_init(time_init)
+    call timing(0,timer_start,timer_tot)
+    
+    
+    !time_init = 0.0 
+    !time_end  = 10.0 
+    !T_summer  = 5.0 
+    !T_mon      = [0.0,1.0,2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0,1.0]
+    !T_summer  = 0.0
+    T_mon     = 0.0
+    co2       = 350.0 
 
     ! Define a topography to work with
     nx = size(rembo_ann%smb,1)
@@ -66,16 +69,16 @@ program emb_driver
     !z_sl = 10.0 
 
     ! Update REMBO, with ice sheet topography    
-    !call rembo_update(year0,T_summer)
-    call rembo_update(year0,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2)
+    !call rembo_update(time_init,T_summer)
+    call rembo_update(time_init,time_ins,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2)
     
-    n_step_max = yearf - year0
+    n_step_max = time_end - time_init
   
     ! ### Run iterations ###
     do n_step = 1, n_step_max    ! in years
 
         ! call REMBO1
-        call rembo_update(year0+n_step,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2) 
+        call rembo_update(time_init+n_step,time_ins,T_summer,z_srf,H_ice,z_sl,dT_mon=T_mon,co2=co2) 
               
         ! Update the timers for each timestep and output
         call timing(n_step,timer_start,timer_tot)
@@ -84,7 +87,7 @@ program emb_driver
 
 
     ! Write a restart file
-    call rembo_restart_write("./rembo_restart.nc",year0)
+    call rembo_restart_write("./rembo_restart.nc",time_init)
 
 
 contains

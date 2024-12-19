@@ -1,6 +1,7 @@
 &ctrl
-    year0               = 0.0
-    yearf               = 10.0 
+    time_init           = 0.0
+    time_end            = 10.0
+    time_ins            = 0.0 
     T_summer            = 0.0
 /
 

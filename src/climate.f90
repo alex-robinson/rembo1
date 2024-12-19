@@ -53,7 +53,7 @@ contains
 !             over 1 year of accum and temperature
 !             *All data sets should be on sicopolis grid size...
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
-  subroutine rembo_update(time,dT_summer,z_srf,H_ice,z_sl,mask_relax,dT_mon,co2)
+  subroutine rembo_update(time,time_ins,dT_summer,z_srf,H_ice,z_sl,mask_relax,dT_mon,co2)
   
     use emb_global
     use emb_functions
@@ -65,6 +65,7 @@ contains
     real (8), parameter :: dx=dxs
     
     real(8), intent(IN) :: time                         ! Current external driver time
+    real(8), intent(IN) :: time_ins                     ! Time to use for insolation calculations (usually years BP)
     real(8), intent(IN) :: dT_summer                    ! Summer temp anomaly [K]
     real(8), intent(IN), optional :: z_srf(nx,ny)       ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: H_ice(nx,ny)       ! Input from ice-sheet model or data
@@ -141,20 +142,10 @@ end if
   
     call cpu_time(timer%climate)           ! get current time in seconds   
     
-    ! ##### Adjust current distribution for temporal shift #####
-    ! yearnow needed for boundary forcing and sinsol2d
-    if (transient .ne. 0) then           ! Transient runs
-      
-      yearnow = time
-      
-      ! ## ADJUSTMENT FOR PALEO RUNS (after year 00) ##
-      if ( transient .eq. 2 .and. yearnow .gt. 0.d0 ) yearnow = 0.d0  
+    ! ##### Get time information #####
 
-    else                                 ! Equilibrium runs
-      
-      yearnow = year0 + year_offset
-    
-    end if
+    ! yearnow needed for boundary forcing and sinsol2d
+    yearnow = time_ins
 
     ! Get the current year, as relevant to output
     yearnow1 = time
@@ -195,20 +186,18 @@ end if
       ! ================================================
       ! remboyelmo 
 
-      ! if (present(z_srf) .and. present(H_ice)) then 
-      !   ! Update fields from external model (zs and m2), if available
+      if (present(z_srf) .and. present(H_ice)) then 
+        ! Update fields from external model (zs and m2), if available
         
-      !   call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
+        call rembo_get_topo(zs,m2,z_srf,H_ice,z_sl)
 
-      ! else 
-      !   ! Define fields from initial setup 
+      else 
+        ! Define fields from initial setup 
 
-      !   zs = fields0%zs 
-      !   m2 = fields0%m2 
+        zs = fields0%zs 
+        m2 = fields0%m2 
         
-      ! end if 
-      zs = fields0%zs 
-      m2 = fields0%m2 
+      end if
 
       ! Define relaxation mask
       if (present(mask_relax)) then
@@ -288,7 +277,7 @@ end if
     ! #### OUTPUT SECTION ####
     
     ! Determine the current output index
-    n_now = match(yearnow1,time_out*1d3)
+    n_now = match(yearnow1,time_out)
     
     if ( n_now .ne. 0 ) then
       
@@ -336,7 +325,7 @@ end if
     end if
       
     ! Determine the current output index for restart file
-    n_now = match(yearnow1,time_out_r*1d3)
+    n_now = match(yearnow1,time_out_r)
 
     ! Obsolete, restart writing happens externally now.
     ! if ( write_rembo_r .eq. 1 .and. yearnow1 .ne. year0 .and. n_now .ne. 0 ) then
