@@ -1,0 +1,26 @@
+{
+
+    "exe_default" : "librembo/bin/test_rembo.x",
+
+    "par_path_as_argument" : true,
+
+    "exe_aliases" : {},
+    
+    "grp_aliases" : {},
+
+    "par_paths" : 
+        {
+            "rembo"  : "rembo_Greenland.nml"
+        },
+        
+    "files" : [], 
+
+    "dir-special" :
+    {
+        "None" : "target_dir_name"
+    },
+
+    "links" : 
+        ["input","ice_data"]
+
+}

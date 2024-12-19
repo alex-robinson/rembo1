@@ -2,7 +2,7 @@
 .vscode
 yelmo
 Makefile
-runrembo.js
+.runme_config
 librembo
 ice_data
 output
