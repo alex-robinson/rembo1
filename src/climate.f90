@@ -100,6 +100,8 @@ contains
 
     type(choices) :: now
 
+    logical :: init_summary2_file
+
     ! Safety check
     if ( present(z_srf) .and. (.not. present(H_ice)) .or. &
          (.not. present(z_srf)) .and. present(H_ice) ) then 
@@ -364,10 +366,12 @@ end if
     !   end if
 
     ! end if
-      
+    
     ! Output various 1D files, by region
     !if ((time-year0) .eq. (time-year0)/dto_clim*dto_clim ) then
     if (time - rembo_ann%time_dto_clim .ge. dto_clim ) then 
+
+      init_summary2_file = init_summary2 .eq. 0
 
       ! Update current saved time 
       rembo_ann%time_dto_clim = time 
@@ -381,8 +385,7 @@ end if
           
           write(fnm,"(a11,i1,a3)") "rembo.gis.S",qq,".nc"
           call climchecker_new(trim(outfldr)//trim(fnm), &
-                              day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
-          if ( time .eq. year0 ) init_summary2 = 0
+                              day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time,init_summary2_file)
         
         end do
       end if 
@@ -391,8 +394,7 @@ end if
       mask = 0.d0
       where( m2 .eq. 0.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.gis.nc", &
-                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
-      if ( time .eq. year0 ) init_summary2 = 0
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time,init_summary2_file)
       
 !!!   ! Kill condition for transient simulations (enough ice points and enough time passed)
 !!!      if ( sum(mask) .lt. 150.d0 .and. time .gt. 20d3 ) kill = 1
@@ -401,12 +403,14 @@ end if
       mask = 0.d0
       where( m2 .le. 1.d0 ) mask = 1.d0
       call climchecker_new(trim(outfldr)//"rembo.grl.nc", &
-                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time)
-      if ( time .eq. year0 ) init_summary2 = 0
+                          day,mon,ann,mask,zs,lats,lons,T_warming,T_anomaly,co2_now,time,init_summary2_file)
       
       ! Write/calc comparison to observational fields
       !if ( trim(domain) .eq. "GRL" ) call climchecker2(m2,zs)
-                                
+      
+      ! Ensure init_summary2 is not zero
+      init_summary2 = 1
+
     end if
     
     ! #### END OUTPUT SECTION ####

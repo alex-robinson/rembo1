@@ -669,7 +669,7 @@ contains
   ! Author     :  Alex Robinson
   ! Purpose    :  Output means/sums of variables for a given region
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,T_warming,T_anomaly,co2,yearnow)
+  subroutine climchecker_new(fnm,d,m,a,mask,zs,lats,lons,T_warming,T_anomaly,co2,yearnow,init)
     
     implicit none
     
@@ -683,7 +683,8 @@ contains
     real(8), intent(IN) :: T_anomaly(:)     ! Daily anomaly values
     real(8), intent(IN) :: co2
     real(8), intent(IN) :: yearnow
-    
+    logical, intent(IN) :: init 
+
     real (8), parameter :: ela_ebs = 100.d0   ! mm/a
     real (8), parameter :: area_conv = 1e-6*1e-6  ! m2=>km2=>1e6km2
     real (8), parameter :: vol_conv  = 1e-9*1e-6  ! m3=>km3=>1e6km3
@@ -878,9 +879,9 @@ contains
 
     end do
     
-    ! Initialize output file (netcdf)
-    if (init_summary2 .eq. 0) then
-      
+    if (init) then
+      ! Initialize output file (netcdf)
+
       call nc_create(fnm)
       call nc_write_dim(trim(fnm),"x",    x=x0*1e-3,nx=1)
       call nc_write_dim(trim(fnm),"y",    x=y0*1e-3,nx=1)
@@ -891,8 +892,6 @@ contains
       
       call nc_write_dim(trim(fnm),"nrec", x=0.d0,dx=1.d0,nx=1,units="n/a")
 
-      init_summary2 = 1
-      
     end if
     
     ! Determine the number of records in this file, add 1
