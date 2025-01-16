@@ -300,7 +300,7 @@ contains
         end do
       end if
       
-      ! Assume precip flux-correction is zero by default
+      ! Assume precip scaling-correction is zero by default
       do k = 1, nk
         low0(k)%dpp_corr = 0.d0 
       end do 
@@ -428,18 +428,17 @@ contains
                         low%rhum,zslp,dzslp,relaxp,dxl,dt_sec,kappa_p,&
                         paramfields%qqfac,paramfields%p_tau)
             
+            ! ---------------------------------------------
+            ! ajr: to do
+            ! Add precip-scaling correction application here
+
+            low%pp = low%pp * low0(kd)%dpp_corr
+
+            ! ---------------------------------------------
+            
             ! scale the precip (for uncertainty studies)
             low%pp = low%pp * pp_scalar(T_anomaly(kd))
             
-            ! ---------------------------------------------
-            ! ajr: to do
-            ! Add flux correction application here
-
-            low%pp = low%pp + low0(kd)%dpp_corr
-
-            ! ---------------------------------------------
-            
-
             ! Calculate other quantities
             low%snow = low%pp * snowfrac(low%tt - lapse*zsl)
             low%rain = low%pp - low%snow

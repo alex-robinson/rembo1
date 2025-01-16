@@ -8,6 +8,22 @@ module emb_functions
   
  contains
   
+  subroutine rembo_calc_precip_corr(dpp_corr,pp_rembo,pp_ref)
+
+    implicit none
+
+    real(8), intent(OUT) :: dpp_corr(:,:)
+    real(8), intent(IN)  :: pp_rembo(:,:)
+    real(8), intent(IN)  :: pp_ref(:,:)
+    
+    
+
+
+
+    return
+
+  end subroutine rembo_calc_precip_corr
+
   subroutine rembo_update_boundary_forcing_monthly(T_anomaly,T_warming,T_monthly,day_month,day_year)
   
     implicit none

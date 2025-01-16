@@ -48,10 +48,14 @@ $(objdir)/ncio_transpose.o : $(libdir)/ncio_transpose.f90 $(objdir)/ncio.o
 $(objdir)/interp1D.o : $(libdir)/interp1D.f90
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 
+$(objdir)/gaussian_filter.o : $(libdir)/gaussian_filter.f90
+	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
+
 rembo_libs = 	$(objdir)/nml.o \
 				$(objdir)/ncio.o \
 				$(objdir)/ncio_transpose.o \
-				$(objdir)/interp1D.o
+				$(objdir)/interp1D.o \
+				$(objdir)/gaussian_filter.o
 
 ###############################################
 ##
