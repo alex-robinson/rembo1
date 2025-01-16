@@ -10,7 +10,11 @@ module emb_functions
  contains
   
   subroutine rembo_calc_precip_corr(dpp_corr,pp_rembo,pp_ref,dx,sigma,max_corr)
-
+    ! This routine takes a reference rembo monthly precipitation array and
+    ! a reference target monthly precipitation array and produces a monthly
+    ! correction factor that can be used to correct the precipitation 
+    ! calculation online. 
+    
     implicit none
 
     real(8), intent(OUT) :: dpp_corr(:,:,:)
