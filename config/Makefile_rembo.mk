@@ -13,7 +13,7 @@ $(objdir)/emb_pdesolver.o : $(srcdir)/emb_pdesolver.f90 $(objdir)/emb_global.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 $(objdir)/projector.o : $(srcdir)/projector.f90 $(objdir)/emb_global.o 
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-$(objdir)/emb_functions.o : $(srcdir)/emb_functions.f90 $(objdir)/emb_global.o $(objdir)/ncio.o 
+$(objdir)/emb_functions.o : $(srcdir)/emb_functions.f90 $(objdir)/emb_global.o $(objdir)/ncio.o $(objdir)/gaussian_filter.o 
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 $(objdir)/rembo_functions.o : $(srcdir)/rembo_functions.f90 $(objdir)/emb_global.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<

@@ -555,7 +555,7 @@ end if
         lons      = fields0%lons
         
         ! Calculate the horizontal gradient of the initial topography
-        call hgrad(fields0%zs,dx,fields0%dzs)
+        call hgradient(fields0%zs,dx,fields0%dzs)
         
         write(*,"(a1,5x,f12.3,5x,a)") "e",time,"Initialized topography for rembo_update."
         

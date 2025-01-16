@@ -1748,7 +1748,7 @@ end if
     
     ! Get elevation gradients
     dzs0 = fields0%dzs
-    call hgrad(zs,dx,dzs) 
+    call hgradient(zs,dx,dzs) 
     
     ! Smooth them!
     call tolores(dzs0,  dzsl, rembo0%wtst,nrt,ratio)

@@ -3,6 +3,7 @@ module emb_functions
   use emb_global
   use ncio
   use interp1D
+  use gaussian_filter
 
   implicit none
   
@@ -16,7 +17,7 @@ module emb_functions
     real(8), intent(IN)  :: pp_rembo(:,:)
     real(8), intent(IN)  :: pp_ref(:,:)
     
-    
+
 
 
 
@@ -1831,8 +1832,8 @@ end if
   ! Purpose    :  Horizontal gradient of u0
   !               Returns gradient in km / km or m / m, depends on input
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++    
-  subroutine hgrad(u0,dx,uu)  
-  
+  subroutine hgradient(u0,dx,uu)  
+
     implicit none
     
     integer, parameter :: nx = nxe, ny = nye
@@ -1866,7 +1867,7 @@ end if
     
     return
     
-  end subroutine hgrad
+  end subroutine hgradient
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine :  d 2 u _ d x 2
