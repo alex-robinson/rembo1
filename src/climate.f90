@@ -130,7 +130,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     write(*,*)
     do k = 1, nm
       call rembo_calc_precip_corr(ppcorr0%dpp_corr(k,:,:),ppcorr0%pp_rembo(k,:,:), &
-                                        ppcorr0%pp_ref(k,:,:),dx,sigma=0.0d0,max_corr=0.5d0)
+                                        ppcorr0%pp_ref(k,:,:),dx,sigma=100.0d3,max_corr=0.5d0)
       write(*,*) "dpp_corr ", k, minval(ppcorr0%dpp_corr(k,:,:)), maxval(ppcorr0%dpp_corr(k,:,:)) 
     end do
 
@@ -959,11 +959,13 @@ end if
     ! Apply Gaussian smoothing to the precip fields
     
     if (sigma .gt. 0.0) then 
-      call filter_gaussian_fast(pp_rembo_now, sigma, dx)
+      !call filter_gaussian_fast(pp_rembo_now, sigma, dx)
+      call smooth_gauss_2D(pp_rembo_now,dx,sigma/dx)
     end if
     
     if (sigma .gt. 0.0) then 
-      call filter_gaussian_fast(pp_ref_now, sigma, dx)
+      !call filter_gaussian_fast(pp_ref_now, sigma, dx)
+      call smooth_gauss_2D(pp_ref_now,dx,sigma/dx)
     end if
 
     ! Calculate the correction factor, point by point
@@ -987,5 +989,167 @@ end if
     return
 
   end subroutine rembo_calc_precip_corr
+
+  subroutine smooth_gauss_2D(var,dx,f_sigma,mask_apply,mask_use)
+        ! Smooth out a field to avoid noise 
+        ! mask_apply designates where smoothing should be applied 
+        ! mask_use   designates which points can be considered in the smoothing filter 
+
+        implicit none
+
+        real(8),   intent(INOUT) :: var(:,:)      ! [nx,ny] 2D variable
+        real(8),   intent(IN)    :: dx 
+        real(8),   intent(IN)    :: f_sigma  
+        logical,   intent(IN), optional :: mask_apply(:,:) 
+        logical,   intent(IN), optional :: mask_use(:,:) 
+
+        ! Local variables
+        integer :: i, j, nx, ny, n, n2
+        real(8) :: sigma    
+        real(8), allocatable :: filter0(:,:), filter(:,:) 
+        real(8), allocatable :: var_old(:,:) 
+        logical, allocatable :: mask_apply_local(:,:) 
+        logical, allocatable :: mask_use_local(:,:)
+
+        nx    = size(var,1)
+        ny    = size(var,2)
+
+        ! Safety check
+        if (f_sigma .lt. 1.0) then 
+            write(*,*) ""
+            write(*,*) "smooth_gauss_2D:: Error: f_sigma must be >= 1."
+            write(*,*) "f_sigma: ", f_sigma 
+            write(*,*) "dx:      ", dx 
+            stop 
+        end if 
+
+        ! Get smoothing radius as standard devation of Gaussian function
+        sigma = dx*f_sigma 
+
+        ! Determine half-width of filter as 3-sigma
+        n2 = 3*ceiling(f_sigma)
+
+        ! Get total number of points for filter window in each direction
+        n = 2*n2+1
+        
+        allocate(var_old(nx+2*n2,ny+2*n2))
+        allocate(mask_apply_local(nx+2*n2,ny+2*n2))
+        allocate(mask_use_local(nx+2*n2,ny+2*n2))
+        allocate(filter0(n,n))
+        allocate(filter(n,n))
+
+        ! Check whether mask_apply is available 
+        if (present(mask_apply)) then 
+            ! use mask_use to define neighborhood points
+            
+            mask_apply_local = .FALSE. 
+            mask_apply_local(n2+1:n2+nx,n2+1:n2+ny) = mask_apply 
+
+        else
+            ! Assume that everywhere should be smoothed
+
+            mask_apply_local = .FALSE. 
+            mask_apply_local(n2+1:n2+nx,n2+1:n2+ny) = .TRUE.
+        
+        end if
+
+        ! Check whether mask_use is available 
+        if (present(mask_use)) then 
+            ! use mask_use to define neighborhood points
+            
+            mask_use_local = .TRUE.
+            mask_use_local(n2+1:n2+nx,n2+1:n2+ny) = mask_use 
+
+        else
+            ! Assume that mask_apply also gives the points to use for smoothing 
+
+            mask_use_local = mask_apply_local
+        
+        end if
+
+        ! Calculate default 2D Gaussian smoothing kernel
+        filter0 = gauss_values(dx,dx,sigma=sigma,n=n)
+
+        var_old = 0.0 
+        var_old(n2+1:n2+nx,n2+1:n2+ny) = var 
+        var_old(1:n2,n2+1:n2+ny)       = var(n2:1:-1,:)
+        var_old(nx+1:nx+n2,n2+1:n2+ny) = var((nx-n2+1):nx,:)
+        var_old(n2+1:n2+nx,1:n2)       = var(:,n2:1:-1)
+        var_old(n2+1:n2+nx,ny+1:ny+n2) = var(:,(ny-n2+1):ny)
+        var_old(1:n2,n2+1:n2+ny)       = var(n2:1:-1,:)
+        var_old(nx+1:nx+n2,n2+1:n2+ny) = var((nx-n2+1):nx,:)
+        var_old(n2+1:n2+nx,1:n2)       = var(:,n2:1:-1)
+        var_old(n2+1:n2+nx,ny+1:ny+n2) = var(:,(ny-n2+1):ny)
+        
+        !!$omp parallel do collapse(2) private(i,j,filter)
+        do j = n2+1, n2+ny 
+        do i = n2+1, n2+nx 
+
+            if (mask_apply_local(i,j)) then 
+                ! Apply smoothing to this point 
+
+                ! Limit filter input to neighbors of interest
+                filter = filter0 
+                where(.not. mask_use_local(i-n2:i+n2,j-n2:j+n2)) filter = 0.0
+
+                ! If neighbors are available, normalize and perform smoothing  
+                if (sum(filter) .gt. 0.0) then 
+                    filter = filter/sum(filter)
+                    var(i-n2,j-n2) = sum(var_old(i-n2:i+n2,j-n2:j+n2)*filter) 
+                end if  
+
+            end if 
+
+        end do 
+        end do 
+        !!$omp end parallel do
+
+        return 
+
+    end subroutine smooth_gauss_2D
+
+    function gauss_values(dx,dy,sigma,n) result(filt)
+        ! Calculate 2D Gaussian smoothing kernel
+        ! https://en.wikipedia.org/wiki/Gaussian_blur
+
+        use emb_global, only : pi
+
+        implicit none 
+
+        real(8), intent(IN) :: dx 
+        real(8), intent(IN) :: dy 
+        real(8), intent(IN) :: sigma 
+        integer, intent(IN) :: n 
+        real(8) :: filt(n,n) 
+
+        ! Local variables 
+        real(8) :: x, y  
+        integer :: n2, i, j, i1, j1  
+
+        if (mod(n,2) .ne. 1) then 
+            write(*,*) "gauss_values:: error: n can only be odd."
+            write(*,*) "n = ", n 
+        end if 
+
+        n2 = (n-1)/2 
+
+        do j = -n2, n2 
+        do i = -n2, n2 
+            x = i*dx 
+            y = j*dy 
+
+            i1 = i+1+n2 
+            j1 = j+1+n2 
+            filt(i1,j1) = 1.0/(2.0*pi*sigma**2)*exp(-(x**2+y**2)/(2*sigma**2))
+
+        end do 
+        end do 
+        
+        ! Normalize to ensure sum to 1
+        filt = filt / sum(filt)
+
+        return 
+
+    end function gauss_values
 
 end module rembo_sclimate
