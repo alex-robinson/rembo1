@@ -233,15 +233,6 @@ module emb_global
   
   type(input_fields), dimension(:,:), allocatable :: fields0
   
-  type precip_correction_type
-    real(8) :: pp_rembo(nys,nxs,nm)
-    real(8) :: pp_ref(nys,nxs,nm)
-    real(8) :: dpp_corr(nys,nxs,nm)
-    real(8) :: dpp_corr_emb(nye,nxe,nm)
-  end type
-
-  type(precip_correction_type) :: ppcorr0
-
   type transient_warming_type
     double precision :: T_warming, dTdt, dVdt
     double precision, dimension(:), allocatable :: dVdtm

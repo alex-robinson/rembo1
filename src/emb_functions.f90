@@ -9,69 +9,6 @@ module emb_functions
   
  contains
   
-  subroutine rembo_calc_precip_corr(dpp_corr,pp_rembo,pp_ref,dx,sigma,max_corr)
-    ! This routine takes a reference rembo monthly precipitation array and
-    ! a reference target monthly precipitation array and produces a monthly
-    ! correction factor that can be used to correct the precipitation 
-    ! calculation online. 
-    
-    implicit none
-
-    real(8), intent(OUT) :: dpp_corr(:,:,:)
-    real(8), intent(IN)  :: pp_rembo(:,:,:)
-    real(8), intent(IN)  :: pp_ref(:,:,:)
-    real(8), intent(IN)  :: dx
-    real(8), intent(IN)  :: sigma
-    real(8), intent(IN)  :: max_corr
-
-    ! Local variables
-    integer :: i, j, k, nx, ny, nm
-    real(8), allocatable :: pp_rembo_now(:,:)
-    real(8), allocatable :: pp_ref_now(:,:)
-
-    real(8), parameter :: eps = 1e-8
-
-    nx = size(dpp_corr,1)
-    ny = size(dpp_corr,2)
-    nm = size(dpp_corr,3)
-
-    ! Initially set correction factor to 1 everywhere for safety
-    dpp_corr = 1.0
-
-    do k = 1, nm
-
-      ! Apply Gaussian smoothing to the precip fields
-      pp_rembo_now = pp_rembo(:,:,k)
-      if (sigma .gt. 0.0) then 
-        call smooth_gauss_2D(pp_rembo_now,dx, sigma / dx)
-      end if
-      pp_ref_now = pp_ref(:,:,k)
-      if (sigma .gt. 0.0) then 
-        call smooth_gauss_2D(pp_ref_now,dx, sigma / dx)
-      end if
-
-      do j = 1, ny
-      do i = 1, nx
-
-        ! Calculate correction factor
-        dpp_corr(i,j,k) = pp_ref_now(i,j) / (pp_rembo_now(i,j)+eps)
-
-        ! Limit to desired range (e.g., 1.0±0.5)
-        if (dpp_corr(i,j,k) .gt. 1.0+max_corr) then
-          dpp_corr(i,j,k) = 1.0+max_corr
-        else if (dpp_corr(i,j,k) .lt. 1.0-max_corr) then
-          dpp_corr(i,j,k) = 1.0-max_corr
-        end if
-
-      end do
-      end do
-
-    end do
-
-    return
-
-  end subroutine rembo_calc_precip_corr
-
   subroutine rembo_update_boundary_forcing_monthly(T_anomaly,T_warming,T_monthly,day_month,day_year)
   
     implicit none

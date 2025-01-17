@@ -5,6 +5,9 @@ module rembo_sclimate
   type rembo_param_class
     double precision :: dtime_emb
     double precision :: dtime_smb
+    integer :: nx
+    integer :: ny 
+    real(8) :: dx
   end type
 
   type rembo_class  ! ij indices, times
@@ -34,14 +37,76 @@ module rembo_sclimate
 
   type(rembo_class) :: rembo_ann 
 
+  type precip_correction_type
+    real(8), allocatable :: pp_rembo(:,:,:)
+    real(8), allocatable :: pp_ref(:,:,:)
+    real(8), allocatable :: dpp_corr(:,:,:)
+  end type
+
+  type(precip_correction_type) :: ppcorr0
+
   private
   public :: rembo_init 
+  public :: rembo_equilibrate
   public :: rembo_update 
   public :: rembo_class
   public :: rembo_ann
   public :: rembo_restart_write
 
 contains 
+
+subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
+
+    implicit none
+
+    real(8), intent(IN) :: time                         ! Current external driver time
+    real(8), intent(IN), optional :: z_srf(:,:)         ! Input from ice-sheet model or data
+    real(8), intent(IN), optional :: H_ice(:,:)         ! Input from ice-sheet model or data
+    real(8), intent(IN), optional :: z_sl(:,:)          ! Input from ice-sheet model or data
+    integer, intent(IN), optional :: mask_relax(:,:)    ! Relaxation mask
+
+    ! Local variables
+    integer :: nx, ny, n, ntot, k, nm
+    real(8) :: dx
+    real(8) :: time_now
+    real(8) :: time_init
+    real(8) :: time_end
+    real(8), parameter :: time_ins  = 0.0   ! years BP
+    real(8), parameter :: dT_summer = 0.0
+
+    nx = rembo_ann%par%nx
+    ny = rembo_ann%par%ny
+    dx = rembo_ann%par%dx
+    
+    nm = 12 
+
+    ntot = 100          ! Run for 100 years
+    time_init = time
+    time_end  = time_init + real(ntot,8)     
+
+    do n = 1, ntot
+      time_now = time_init + real(n-1,8)
+      call rembo_update(time_now,time_ins,dT_summer,z_srf,H_ice,z_sl,mask_relax)
+    end do
+
+    ! Reset rembo time back to initial time
+    rembo_ann%time_emb = time 
+    rembo_ann%time_smb = time
+
+    ! Load reference precipitation dataset
+
+    ! TO DO 
+
+    ! Calculate precipitation correction factor
+
+    do k = 1, nm
+      call rembo_calc_precip_corr(ppcorr0%dpp_corr(:,:,k),ppcorr0%pp_rembo(:,:,k), &
+                                        ppcorr0%pp_ref(:,:,k),dx,sigma=100d3,max_corr=0.5d0)
+    end do
+
+    return
+
+end subroutine rembo_equilibrate
 
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! Subroutine :  s c l i m a t e
@@ -62,7 +127,7 @@ contains
     implicit none
     
     integer, parameter :: nx=nxs, ny=nys
-    real (8), parameter :: dx=dxs
+    real(8), parameter :: dx=dxs
     
     real(8), intent(IN) :: time                         ! Current external driver time
     real(8), intent(IN) :: time_ins                     ! Time to use for insolation calculations (usually years BP)
@@ -539,6 +604,14 @@ end if
       rembo_ann%pdds   = 0.0 
       rembo_ann%mask_relax = 0 
 
+      allocate(ppcorr0%pp_rembo(nx,ny,nm))
+      allocate(ppcorr0%pp_ref(nx,ny,nm))
+      allocate(ppcorr0%dpp_corr(nx,ny,nm))
+      
+      ppcorr0%pp_rembo = 0.0
+      ppcorr0%pp_ref   = 0.0
+      ppcorr0%dpp_corr = 0.0
+
       ! ================================================
 
       call emb_globinit(1)
@@ -576,6 +649,9 @@ end if
         ! Store parameter values too 
         rembo_ann%par%dtime_emb = dtime_emb 
         rembo_ann%par%dtime_smb = dtime_smb 
+        rembo_ann%par%nx = nx
+        rembo_ann%par%ny = ny 
+        rembo_ann%par%dx = dx 
 
         write(*,*) "rembo_init:: summary"
         write(*,*) "range m2  : ", minval(m2), maxval(m2) 
@@ -789,4 +865,68 @@ end if
   
   end subroutine conventional
   
+  subroutine rembo_calc_precip_corr(dpp_corr,pp_rembo,pp_ref,dx,sigma,max_corr)
+    ! This routine takes a reference rembo precipitation array and
+    ! a reference target precipitation array and produces a
+    ! correction factor that can be used to correct the precipitation 
+    ! calculation online. 
+
+    implicit none
+
+    real(8), intent(OUT) :: dpp_corr(:,:)
+    real(8), intent(IN)  :: pp_rembo(:,:)
+    real(8), intent(IN)  :: pp_ref(:,:)
+    real(8), intent(IN)  :: dx
+    real(8), intent(IN)  :: sigma
+    real(8), intent(IN)  :: max_corr
+
+    ! Local variables
+    integer :: i, j, k, nx, ny, nm
+    real(8), allocatable :: pp_rembo_now(:,:)
+    real(8), allocatable :: pp_ref_now(:,:)
+
+    real(8), parameter :: eps = 1e-8
+
+    nx = size(dpp_corr,1)
+    ny = size(dpp_corr,2)
+
+    ! Initially set correction factor to 1 everywhere for safety
+    dpp_corr = 1.0
+
+    ! Store precip fields locally to allow changes
+    pp_rembo_now = pp_rembo
+    pp_ref_now   = pp_ref
+
+    ! Apply Gaussian smoothing to the precip fields
+    
+    if (sigma .gt. 0.0) then 
+      call smooth_gauss_2D(pp_rembo,dx, sigma / dx)
+    end if
+    
+    if (sigma .gt. 0.0) then 
+      call smooth_gauss_2D(pp_ref,dx, sigma / dx)
+    end if
+
+    ! Calculate the correction factor, point by point
+
+    do j = 1, ny
+    do i = 1, nx
+
+      ! Calculate correction factor
+      dpp_corr(i,j) = pp_ref(i,j) / (pp_rembo(i,j)+eps)
+
+      ! Limit to desired range (e.g., 1.0±0.5)
+      if (dpp_corr(i,j) .gt. 1.0+max_corr) then
+        dpp_corr(i,j) = 1.0+max_corr
+      else if (dpp_corr(i,j) .lt. 1.0-max_corr) then
+        dpp_corr(i,j) = 1.0-max_corr
+      end if
+
+    end do
+    end do
+
+    return
+
+  end subroutine rembo_calc_precip_corr
+
 end module rembo_sclimate
