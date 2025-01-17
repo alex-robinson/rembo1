@@ -57,8 +57,9 @@ contains
 
 subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
 
-    use emb_global, only : precip_mon_file, precip_mon_nms
+    use emb_global, only : precip_mon_file, precip_mon_nms, x0, y0, day_month
     use rembo_main, only : mon, rembo0
+    use ncio
     use ncio_transpose
 
     implicit none
@@ -79,6 +80,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     real(8), parameter :: dT_summer = 0.0
 
     real(8), allocatable :: sf(:,:), rf(:,:)
+    character(len=256) :: fnm 
 
     nx = rembo_ann%par%nx
     ny = rembo_ann%par%ny
@@ -110,7 +112,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     ! Store rembo reference precipitation fields
     write(*,*)
     do k = 1, nm 
-      ppcorr0%pp_rembo(k,:,:) = mon(k)%pp / 30.0    ! [mm/m] => [mm/d]
+      ppcorr0%pp_rembo(k,:,:) = mon(k)%pp / day_month   ! [mm/m] => [mm/d]
       write(*,*) "pp_rembo ", k, minval(ppcorr0%pp_rembo(k,:,:)), maxval(ppcorr0%pp_rembo(k,:,:))
     end do
 
@@ -118,7 +120,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     write(*,*)
     do k = 1, nm
       call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (rainfall)
-      call nc_read_t(precip_mon_file,precip_mon_nms(1),  sf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (snowfall)
+      call nc_read_t(precip_mon_file,precip_mon_nms(2),  sf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (snowfall)
       ppcorr0%pp_ref(k,:,:) = rf + sf   ! rainfall + snowfall 
       write(*,*) "pp_ref ", k, minval(ppcorr0%pp_ref(k,:,:)), maxval(ppcorr0%pp_ref(k,:,:)) 
     end do
@@ -127,10 +129,32 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
 
     write(*,*)
     do k = 1, nm
-      call rembo_calc_precip_corr(ppcorr0%dpp_corr(:,:,k),ppcorr0%pp_rembo(:,:,k), &
-                                        ppcorr0%pp_ref(:,:,k),dx,sigma=100d3,max_corr=0.5d0)
+      call rembo_calc_precip_corr(ppcorr0%dpp_corr(k,:,:),ppcorr0%pp_rembo(k,:,:), &
+                                        ppcorr0%pp_ref(k,:,:),dx,sigma=0.0d0,max_corr=0.5d0)
       write(*,*) "dpp_corr ", k, minval(ppcorr0%dpp_corr(k,:,:)), maxval(ppcorr0%dpp_corr(k,:,:)) 
     end do
+
+if (.TRUE.) then
+  ! Write output file
+
+    fnm = "rembo_ppcorr.nc"
+
+    call nc_create(fnm)
+    call nc_write_dim(fnm,"xc",x=x0*1e-3,dx=dx*1e-3,nx=nx,units="km")
+    call nc_write_dim(fnm,"yc",x=y0*1e-3,dx=dx*1e-3,nx=ny,units="km")
+    call nc_write_dim(fnm,"month",x=1,dx=1,nx=12,units="month")
+
+    do k = 1, nm
+      call nc_write_t(fnm,"pp_rembo",ppcorr0%pp_rembo(k,:,:),dim1="xc",dim2="yc",dim3="month", &
+                                start=[1,1,k],count=[nx,ny,1],units="mm/d",long_name="precip - rembo")
+      call nc_write_t(fnm,"pp_ref",ppcorr0%pp_ref(k,:,:),dim1="xc",dim2="yc",dim3="month", &
+                                start=[1,1,k],count=[nx,ny,1],units="mm/d",long_name="precip - ref")
+      call nc_write_t(fnm,"dpp_corr",ppcorr0%dpp_corr(k,:,:),dim1="xc",dim2="yc",dim3="month", &
+                                start=[1,1,k],count=[nx,ny,1],units="mm/d",long_name="precip correction factor")
+    end do
+
+
+end if
 
     ! Calculate low-resolution daily version
 
