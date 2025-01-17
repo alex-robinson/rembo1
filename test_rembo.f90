@@ -63,6 +63,11 @@ program emb_driver
                                             domain="Greenland",grid_name="GRL-16KM")
     z_sl = 0.0 
 
+    ! Perform equilibration to make sure precip correction factor is calculated.
+    call rembo_equilibrate(time_init,z_srf,H_ice,z_sl)
+
+    stop
+
     ! Testing modifications to topography and sea level
     !z_srf = z_srf*0.5
     !H_ice = H_ice*0.5

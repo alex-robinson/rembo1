@@ -161,6 +161,9 @@ module emb_global
   character (len=256) :: emb_clim_file, clim_file
   integer :: stdout
   
+  character (len=256) :: precip_mon_file
+  character (len=24)  :: precip_mon_nms(2)
+
   integer :: write_rembo_r, write_emb_d, write_rembo_m, write_rembo_d
   
   ! Boundary data options
@@ -672,6 +675,9 @@ end if
       call nml_read(path_par,group,"emb_clim_file",   emb_clim_file)
       call nml_read(path_par,group,"clim_file",       clim_file)
 
+      call nml_read(path_par,group,"precip_mon_file", precip_mon_file)
+      call nml_read(path_par,group,"precip_mon_nms",  precip_mon_nms)
+      
       !! Program switches
       call nml_read(path_par,group,"climchoice",      climchoice)
       call nml_read(path_par,group,"precip",          precip)

@@ -342,7 +342,7 @@ contains
         integer :: nx, ny, nloop, i 
 
         ! Get sigma in terms of points
-        sigmap = sigmap 
+        sigmap = sigma
         if (present(dx)) then 
             sigmap = sigma / dx 
         end if 

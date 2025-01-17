@@ -57,6 +57,10 @@ contains
 
 subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
 
+    use emb_global, only : precip_mon_file, precip_mon_nms
+    use rembo_main, only : mon, rembo0
+    use ncio_transpose
+
     implicit none
 
     real(8), intent(IN) :: time                         ! Current external driver time
@@ -74,13 +78,18 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     real(8), parameter :: time_ins  = 0.0   ! years BP
     real(8), parameter :: dT_summer = 0.0
 
+    real(8), allocatable :: sf(:,:), rf(:,:)
+
     nx = rembo_ann%par%nx
     ny = rembo_ann%par%ny
     dx = rembo_ann%par%dx
     
+    allocate(sf(ny,nx))
+    allocate(rf(ny,nx))
+    
     nm = 12 
 
-    ntot = 100          ! Run for 100 years
+    ntot = 1          ! Run for 100 years
     time_init = time
     time_end  = time_init + real(ntot,8)     
 
@@ -93,16 +102,40 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     rembo_ann%time_emb = time 
     rembo_ann%time_smb = time
 
-    ! Load reference precipitation dataset
+    ! ==============================================================
+    ! Calculate precipitation correction factor
 
-    ! TO DO 
+    write(*,*) "Precipitation correction factor calculations ..."
+
+    ! Store rembo reference precipitation fields
+    write(*,*)
+    do k = 1, nm 
+      ppcorr0%pp_rembo(k,:,:) = mon(k)%pp / 30.0    ! [mm/m] => [mm/d]
+      write(*,*) "pp_rembo ", k, minval(ppcorr0%pp_rembo(k,:,:)), maxval(ppcorr0%pp_rembo(k,:,:))
+    end do
+
+    ! Load reference precipitation dataset
+    write(*,*)
+    do k = 1, nm
+      call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (rainfall)
+      call nc_read_t(precip_mon_file,precip_mon_nms(1),  sf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (snowfall)
+      ppcorr0%pp_ref(k,:,:) = rf + sf   ! rainfall + snowfall 
+      write(*,*) "pp_ref ", k, minval(ppcorr0%pp_ref(k,:,:)), maxval(ppcorr0%pp_ref(k,:,:)) 
+    end do
 
     ! Calculate precipitation correction factor
 
+    write(*,*)
     do k = 1, nm
       call rembo_calc_precip_corr(ppcorr0%dpp_corr(:,:,k),ppcorr0%pp_rembo(:,:,k), &
                                         ppcorr0%pp_ref(:,:,k),dx,sigma=100d3,max_corr=0.5d0)
+      write(*,*) "dpp_corr ", k, minval(ppcorr0%dpp_corr(k,:,:)), maxval(ppcorr0%dpp_corr(k,:,:)) 
     end do
+
+    ! Calculate low-resolution daily version
+
+    ! TO DO 
+
 
     return
 
@@ -604,9 +637,9 @@ end if
       rembo_ann%pdds   = 0.0 
       rembo_ann%mask_relax = 0 
 
-      allocate(ppcorr0%pp_rembo(nx,ny,nm))
-      allocate(ppcorr0%pp_ref(nx,ny,nm))
-      allocate(ppcorr0%dpp_corr(nx,ny,nm))
+      allocate(ppcorr0%pp_rembo(nm,ny,nx))
+      allocate(ppcorr0%pp_ref(nm,ny,nx))
+      allocate(ppcorr0%dpp_corr(nm,ny,nx))
       
       ppcorr0%pp_rembo = 0.0
       ppcorr0%pp_ref   = 0.0
@@ -871,6 +904,8 @@ end if
     ! correction factor that can be used to correct the precipitation 
     ! calculation online. 
 
+    use gaussian_filter, only : filter_gaussian_fast
+
     implicit none
 
     real(8), intent(OUT) :: dpp_corr(:,:)
@@ -900,11 +935,11 @@ end if
     ! Apply Gaussian smoothing to the precip fields
     
     if (sigma .gt. 0.0) then 
-      call smooth_gauss_2D(pp_rembo,dx, sigma / dx)
+      call filter_gaussian_fast(pp_rembo_now, sigma, dx)
     end if
     
     if (sigma .gt. 0.0) then 
-      call smooth_gauss_2D(pp_ref,dx, sigma / dx)
+      call filter_gaussian_fast(pp_ref_now, sigma, dx)
     end if
 
     ! Calculate the correction factor, point by point

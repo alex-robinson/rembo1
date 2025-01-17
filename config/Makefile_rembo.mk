@@ -13,7 +13,7 @@ $(objdir)/emb_pdesolver.o : $(srcdir)/emb_pdesolver.f90 $(objdir)/emb_global.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 $(objdir)/projector.o : $(srcdir)/projector.f90 $(objdir)/emb_global.o 
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-$(objdir)/emb_functions.o : $(srcdir)/emb_functions.f90 $(objdir)/emb_global.o $(objdir)/ncio.o $(objdir)/gaussian_filter.o 
+$(objdir)/emb_functions.o : $(srcdir)/emb_functions.f90 $(objdir)/emb_global.o $(objdir)/ncio.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 $(objdir)/rembo_functions.o : $(srcdir)/rembo_functions.f90 $(objdir)/emb_global.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
@@ -23,7 +23,7 @@ $(objdir)/rembo_main.o : $(srcdir)/rembo_main.f90 $(objdir)/rembo_functions.o $(
 $(objdir)/emb_functions.o $(objdir)/emb_pdesolver.o $(objdir)/projector.o
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 $(objdir)/climate.o : $(srcdir)/climate.f90 $(objdir)/emb_global.o $(objdir)/emb_functions.o \
- 							$(objdir)/rembo_main.o 
+ 							$(objdir)/rembo_main.o $(objdir)/gaussian_filter.o  
 	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
 
 $(objdir)/sinsol_orbit.o : $(srcdir)/sinsol_orbit.f

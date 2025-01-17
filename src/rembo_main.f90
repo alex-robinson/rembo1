@@ -300,9 +300,9 @@ contains
         end do
       end if
       
-      ! Assume precip scaling-correction is zero by default
+      ! Get precip-scaling factor from rembo0 object (precalculated for every day)
       do k = 1, nk
-        low0(k)%dpp_corr = 0.d0 
+        low0(k)%dpp_corr = rembo0%dpp_corr(k,:,:)
       end do 
 
       ! Get the temperature fields from data if desired
@@ -905,6 +905,9 @@ end if
     ! Get data precip field to lo-res
     call tolores(fields0%precip, paramfields%pp00, rembo0%wtst, nrt, ratio)
     
+    ! For now set precipitation correction factor to 1.0
+    rembo0%dpp_corr = 1.0 
+
     ! Get the daily insolation for a year at low-resolution for present day,
     ! Then store as hi-res daily and monthly fields
     call sinsol2d(init%S0,init%lats,0.d0)
