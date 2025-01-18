@@ -57,7 +57,7 @@ contains
 
 subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
 
-    use emb_global, only : precip_mon_file, precip_mon_nms, x0, y0, day_month
+    use emb_global, only : precip_mon_file, precip_mon_nms, x0, y0, day_month, nrt, ratio
     use rembo_main, only : mon, rembo0
     use ncio
     use ncio_transpose
@@ -152,14 +152,27 @@ if (.TRUE.) then
       call nc_write_t(fnm,"dpp_corr",ppcorr0%dpp_corr(k,:,:),dim1="xc",dim2="yc",dim3="month", &
                                 start=[1,1,k],count=[nx,ny,1],units="mm/d",long_name="precip correction factor")
     end do
-
-
 end if
 
     ! Calculate low-resolution daily version
 
-    ! TO DO 
+    call monvar_to_lo_res_daily(rembo0%dpp_corr,ppcorr0%dpp_corr,rembo0,nrt,ratio)
 
+
+if (.TRUE.) then
+    fnm = "rembo_ppcorr_lo.nc"
+
+    call nc_create(fnm)
+    call nc_write_dim(fnm,"xc",x=x0*1e-3,dx=dx*1e-3,nx=size(rembo0%dpp_corr,3),units="km")
+    call nc_write_dim(fnm,"yc",x=y0*1e-3,dx=dx*1e-3,nx=size(rembo0%dpp_corr,2),units="km")
+    call nc_write_dim(fnm,"day",x=1,dx=1,nx=360,units="day")
+
+    do k = 1, 360
+      call nc_write_t(fnm,"dpp_corr",rembo0%dpp_corr(k,:,:),dim1="xc",dim2="yc",dim3="day", &
+                                start=[1,1,k],count=[size(rembo0%dpp_corr,3),size(rembo0%dpp_corr,2),1], &
+                                units="mm/d",long_name="precip correction factor")
+    end do
+end if
 
     return
 
@@ -989,6 +1002,60 @@ end if
     return
 
   end subroutine rembo_calc_precip_corr
+
+  subroutine monvar_to_lo_res_daily(varlo_d,var,init,nr,ratio)
+    ! Calculate low-resolution daily version
+    ! from monthly hi-res fields
+
+    use rembo_main, only : rembo_initvars
+    use emb_functions, only : tolores
+
+    implicit none
+
+    real(8), intent(INOUT) :: varlo_d(:,:,:)
+    real(8), intent(IN)    :: var(:,:,:)
+    type(rembo_initvars), intent(IN) :: init
+    integer, intent(IN)    :: nr
+    real(8), intent(IN)    :: ratio
+
+
+    ! Local variables
+    integer :: k, nk, m0, m1, nm
+    integer :: nx, ny, nxe, nye
+    real(8) :: wt0, wt1
+
+    real(8), allocatable :: varlo(:,:,:)
+
+    nx = size(var,3)       ! nxs
+    ny = size(var,2)       ! nys
+    nm = size(var,1)       ! nm = 12
+
+    nxe = size(varlo_d,3)  ! nxe
+    nye = size(varlo_d,2)  ! nye
+    nk  = size(varlo_d,1)  ! nk = 360 
+
+    allocate(varlo(nm,nye,nxe))
+
+    ! Interpolate to low resolution
+    do k = 1, nm
+      call tolores(var(k,:,:), varlo(k,:,:), init%wtst, nr, ratio)
+    end do
+
+    ! Interpolate to daily values
+    do k = 1, nk
+      
+      ! Load proper interpolation values for today
+      m0 = init%m0(k); wt0 = init%wt0(k)
+      m1 = init%m1(k); wt1 = init%wt1(k)
+      
+      ! Get daily fields
+      varlo_d(k,:,:)   = wt0*varlo(m0,:,:)  + wt1*varlo(m1,:,:)
+
+    end do
+    
+    return
+
+  end subroutine monvar_to_lo_res_daily
 
   subroutine smooth_gauss_2D(var,dx,f_sigma,mask_apply,mask_use)
         ! Smooth out a field to avoid noise 
