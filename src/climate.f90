@@ -8,6 +8,7 @@ module rembo_sclimate
     integer :: nx
     integer :: ny 
     real(8) :: dx
+    logical :: use_restart
   end type
 
   type rembo_class  ! ij indices, times
@@ -55,9 +56,10 @@ module rembo_sclimate
 
 contains 
 
-subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
+subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
 
-    use emb_global, only : precip_mon_file, precip_mon_nms, x0, y0, day_month, nrt, ratio
+    use emb_global, only : precip_mon_file, precip_mon_nms, dppcorr_max, &
+                                                x0, y0, day_month, nrt, ratio
     use rembo_main, only : mon, rembo0
     use ncio
     use ncio_transpose
@@ -69,6 +71,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     real(8), intent(IN), optional :: H_ice(:,:)         ! Input from ice-sheet model or data
     real(8), intent(IN), optional :: z_sl(:,:)          ! Input from ice-sheet model or data
     integer, intent(IN), optional :: mask_relax(:,:)    ! Relaxation mask
+    real(8), intent(IN), optional :: time_tot           ! Total equilibration time
 
     ! Local variables
     integer :: nx, ny, n, ntot, k, nm
@@ -92,6 +95,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     nm = 12 
 
     ntot = 1          ! Run for 100 years
+    if (present(time_tot)) ntot = int(time_tot)
     time_init = time
     time_end  = time_init + real(ntot,8)     
 
@@ -130,7 +134,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax)
     write(*,*)
     do k = 1, nm
       call rembo_calc_precip_corr(ppcorr0%dpp_corr(k,:,:),ppcorr0%pp_rembo(k,:,:), &
-                                        ppcorr0%pp_ref(k,:,:),dx,sigma=100.0d3,max_corr=0.5d0)
+                                        ppcorr0%pp_ref(k,:,:),dx,sigma=100.0d3,max_corr=dppcorr_max)
       write(*,*) "dpp_corr ", k, minval(ppcorr0%dpp_corr(k,:,:)), maxval(ppcorr0%dpp_corr(k,:,:)) 
     end do
 
@@ -686,6 +690,10 @@ end if
 
       call emb_globinit(1)
       
+      ! Make sure to set rembo restart flag for external use too
+      rembo_ann%par%use_restart = .FALSE. 
+      if (anf_dat .eq. 3) rembo_ann%par%use_restart = .TRUE. 
+
       if (init_rembo .eq. 0) then
         
         ! Allocate day, mon and year structures
@@ -731,7 +739,21 @@ end if
 
       call rembo_init_2(m2,time)
 
-    return 
+      if (anf_dat .eq. 3) then
+        ! Additionally load ppcorr0 info from restart file
+
+        do k = 1, nm
+          call nc_read_t(filename_restart,"pp_rembo", ppcorr0%pp_rembo(k,:,:), start=[1,1,k],count=[nxs,nys,1])
+          call nc_read_t(filename_restart,"pp_ref",   ppcorr0%pp_ref(k,:,:),   start=[1,1,k],count=[nxs,nys,1])
+          call nc_read_t(filename_restart,"dpp_corr", ppcorr0%dpp_corr(k,:,:), start=[1,1,k],count=[nxs,nys,1])
+        end do
+
+        ! Calculate low-resolution daily version
+        call monvar_to_lo_res_daily(rembo0%dpp_corr,ppcorr0%dpp_corr,rembo0,nrt,ratio)
+
+      end if
+
+      return 
 
   end subroutine rembo_init
 
@@ -813,6 +835,7 @@ end if
     double precision, intent(IN), optional :: z_sl(:,:)
     
     ! Local variables
+    integer :: k
     double precision :: zs(nys,nxs)
     double precision :: m2(nys,nxs)
 
@@ -825,8 +848,18 @@ end if
       m2 = fields0%m2 
     end if 
 
-    ! Write restart file
+    ! Write restart file using global rembo object
     call rembo_restart(filename,day(nk),m2,zs,time)
+    
+    ! Additionally write monthly dppcorr info
+    do k = 1, nm
+      call nc_write_t(filename,"pp_rembo",ppcorr0%pp_rembo(k,:,:),dim1="x",dim2="y",dim3="month", &
+                                start=[1,1,k],count=[nxs,nys,1],units="mm/d",long_name="precip - rembo")
+      call nc_write_t(filename,"pp_ref",ppcorr0%pp_ref(k,:,:),dim1="x",dim2="y",dim3="month", &
+                                start=[1,1,k],count=[nxs,nys,1],units="mm/d",long_name="precip - ref")
+      call nc_write_t(filename,"dpp_corr",ppcorr0%dpp_corr(k,:,:),dim1="x",dim2="y",dim3="month", &
+                                start=[1,1,k],count=[nxs,nys,1],units="mm/d",long_name="precip correction factor")
+    end do
 
     return
 

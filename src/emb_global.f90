@@ -163,6 +163,7 @@ module emb_global
   
   character (len=256) :: precip_mon_file
   character (len=24)  :: precip_mon_nms(2)
+  real(8) :: dppcorr_max
 
   integer :: write_rembo_r, write_emb_d, write_rembo_m, write_rembo_d
   
@@ -274,6 +275,9 @@ module emb_global
   type(boundary_forcing_type), allocatable, dimension(:) :: forcing
   type(boundary_forcing_type) :: forcing_now
   
+  ! Store restart filename with folder etc for use globally
+  character(len=1024) :: filename_restart
+
 contains  
     
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -677,6 +681,7 @@ end if
 
       call nml_read(path_par,group,"precip_mon_file", precip_mon_file)
       call nml_read(path_par,group,"precip_mon_nms",  precip_mon_nms)
+      call nml_read(path_par,group,"dppcorr_max",     dppcorr_max)
       
       !! Program switches
       call nml_read(path_par,group,"climchoice",      climchoice)
@@ -691,6 +696,17 @@ end if
       call nml_read(path_par,group,"ap_fixed",        ap_fixed)
       call nml_read(path_par,group,"boundary_forcing",boundary_forcing)
       call nml_read(path_par,group,"anf_dat",         anf_dat)
+      
+      ! Overwrite anf_dat restart flag based on 'restart' parameter 
+        if (trim(restart_file) .eq. "None" .or. &
+            trim(restart_file) .eq. "none" .or. &
+            trim(restart_file) .eq. "no") then 
+            ! Do nothing - use value from parameter file
+        else 
+            ! Using restart file - set anf_dat = 3
+            anf_dat = 3
+        end if 
+      
       call nml_read(path_par,group,"clim_coupled",    clim_coupled)
       call nml_read(path_par,group,"transient",       transient)
       call nml_read(path_par,group,"kill",            kill)
@@ -914,8 +930,10 @@ end if
     if ( anf_dat .eq. 3 ) then !! Load variables from restart file
       
       ! netcdf restart filename
-      fnm = trim(outfldr)//trim(restart_file)      
-      
+      !fnm = trim(outfldr)//trim(restart_file)
+      fnm = trim(restart_file)
+      filename_restart = trim(fnm)            ! For global usage
+
       ! Get main topo variables
       call nc_read_t(fnm,"mask", m2)
       call nc_read_t(fnm,"zs",   zs)
