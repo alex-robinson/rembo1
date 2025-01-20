@@ -10,4 +10,4 @@ output
 *.x
 libs/coordinates*
 libs/lis*
-libs/exlib
+libs/fesm-utils
