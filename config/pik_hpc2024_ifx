@@ -8,7 +8,7 @@ COORDROOT = libs/coordinates
 INC_COORD = -I${COORDROOT}/libcoordinates/include
 LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
-LISROOT = libs/exlib/lis-serial
+LISROOT = libs/fesm-utils/lis-serial
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
@@ -17,7 +17,7 @@ FFLAGS  = -no-wrap-margin -module $(objdir) -L$(objdir) $(INC_COORD)
 ifeq ($(openmp), 1)
     # Overwrite default choices with openmp relevant choices 
 
-    LISROOT = libs/exlib/lis-omp
+    LISROOT = libs/fesm-utils/lis-omp
     INC_LIS = -I${LISROOT}/include 
     LIB_LIS = -L${LISROOT}/lib/ -llis
 

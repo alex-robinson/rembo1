@@ -3,11 +3,11 @@ FC = gfortran
 INC_NC = -I/usr/include
 LIB_NC = -L/usr/lib/x86_64-linux-gnu -lnetcdff -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -lnetcdf -lnetcdf -ldl -lm 
 
-COORDROOT = /home/robinson/apps/coordinates/libcoordinates
-INC_COORD = -I${COORDROOT}/include
-LIB_COORD = -L${COORDROOT}/include -lcoordinates
+COORDROOT = libs/coordinates
+INC_COORD = -I${COORDROOT}/libcoordinates/include
+LIB_COORD = -L${COORDROOT}/libcoordinates/include -lcoordinates
 
-LISROOT = /home/javier/apps/lis
+LISROOT = libs/fesm-utils/lis-serial
 INC_LIS = -I${LISROOT}/include 
 LIB_LIS = -L${LISROOT}/lib/ -llis
 
