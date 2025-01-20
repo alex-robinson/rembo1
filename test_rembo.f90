@@ -67,6 +67,8 @@ program emb_driver
         ! Perform equilibration to make sure precip correction factor is calculated.
         call rembo_equilibrate(time_init,z_srf,H_ice,z_sl)
     end if
+
+    stop 
     
     ! Testing modifications to topography and sea level
     !z_srf = z_srf*0.5

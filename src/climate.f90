@@ -1006,12 +1006,12 @@ end if
     
     if (sigma .gt. 0.0) then 
       !call filter_gaussian_fast(pp_rembo_now, sigma, dx)
-      call smooth_gauss_2D(pp_rembo_now,dx,sigma/dx)
+      call smooth_gauss_2D(pp_rembo_now,dx,sigma)
     end if
     
     if (sigma .gt. 0.0) then 
       !call filter_gaussian_fast(pp_ref_now, sigma, dx)
-      call smooth_gauss_2D(pp_ref_now,dx,sigma/dx)
+      call smooth_gauss_2D(pp_ref_now,dx,sigma)
     end if
 
     ! Calculate the correction factor, point by point
@@ -1020,7 +1020,7 @@ end if
     do i = 1, nx
 
       ! Calculate correction factor
-      dpp_corr(i,j) = pp_ref(i,j) / (pp_rembo(i,j)+eps)
+      dpp_corr(i,j) = pp_ref_now(i,j) / (pp_rembo_now(i,j)+eps)
 
       ! Limit to desired range (e.g., 1.0±0.5)
       if (dpp_corr(i,j) .gt. 1.0+max_corr) then
@@ -1090,7 +1090,7 @@ end if
 
   end subroutine monvar_to_lo_res_daily
 
-  subroutine smooth_gauss_2D(var,dx,f_sigma,mask_apply,mask_use)
+  subroutine smooth_gauss_2D(var,dx,sigma,mask_apply,mask_use)
         ! Smooth out a field to avoid noise 
         ! mask_apply designates where smoothing should be applied 
         ! mask_use   designates which points can be considered in the smoothing filter 
@@ -1099,13 +1099,13 @@ end if
 
         real(8),   intent(INOUT) :: var(:,:)      ! [nx,ny] 2D variable
         real(8),   intent(IN)    :: dx 
-        real(8),   intent(IN)    :: f_sigma  
+        real(8),   intent(IN)    :: sigma  
         logical,   intent(IN), optional :: mask_apply(:,:) 
         logical,   intent(IN), optional :: mask_use(:,:) 
 
         ! Local variables
         integer :: i, j, nx, ny, n, n2
-        real(8) :: sigma    
+        real(8) :: f_sigma    
         real(8), allocatable :: filter0(:,:), filter(:,:) 
         real(8), allocatable :: var_old(:,:) 
         logical, allocatable :: mask_apply_local(:,:) 
@@ -1114,17 +1114,18 @@ end if
         nx    = size(var,1)
         ny    = size(var,2)
 
+        ! Get ratio of smoothing radius to resolution
+        f_sigma = sigma / dx
+
         ! Safety check
         if (f_sigma .lt. 1.0) then 
             write(*,*) ""
             write(*,*) "smooth_gauss_2D:: Error: f_sigma must be >= 1."
             write(*,*) "f_sigma: ", f_sigma 
+            write(*,*) "sigma:   ", sigma 
             write(*,*) "dx:      ", dx 
             stop 
         end if 
-
-        ! Get smoothing radius as standard devation of Gaussian function
-        sigma = dx*f_sigma 
 
         ! Determine half-width of filter as 3-sigma
         n2 = 3*ceiling(f_sigma)
