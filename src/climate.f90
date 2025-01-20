@@ -973,9 +973,7 @@ end if
     ! a reference target precipitation array and produces a
     ! correction factor that can be used to correct the precipitation 
     ! calculation online. 
-
-    use gaussian_filter, only : filter_gaussian_fast
-
+    
     implicit none
 
     real(8), intent(OUT) :: dpp_corr(:,:)
