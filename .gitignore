@@ -9,5 +9,4 @@ output
 .obj
 *.x
 libs/coordinates*
-libs/lis*
-libs/fesm-utils
+fesm-utils
