@@ -104,10 +104,10 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
       call rembo_update(time_now,time_ins,dT_summer,z_srf,H_ice,z_sl,mask_relax)
     end do
 
-    ! Reset rembo time back to initial time
-    rembo_ann%time_emb = time 
-    rembo_ann%time_smb = time
-
+    ! Reset rembo time back to initial time minus the timestep (so model runs at time_init)
+    rembo_ann%time_emb = time - rembo_ann%par%dtime_emb
+    rembo_ann%time_smb = time - rembo_ann%par%dtime_smb
+    
     ! ==============================================================
     ! Calculate precipitation correction factor
 
