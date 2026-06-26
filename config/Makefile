@@ -46,26 +46,9 @@ endif
 include config/Makefile_rembo.mk
 
 # GLOBAL RULES ####
-$(objdir)/nml.o : $(libdir)/nml.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-	
-$(objdir)/ncio.o : $(libdir)/ncio.f90
-	$(FC) $(DFLAGS) $(FFLAGS) $(INC_NC) -c -o $@ $<
-
-$(objdir)/ncio_transpose.o : $(libdir)/ncio_transpose.f90 $(objdir)/ncio.o
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-$(objdir)/interp1D.o : $(libdir)/interp1D.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-$(objdir)/gaussian_filter.o : $(libdir)/gaussian_filter.f90
-	$(FC) $(DFLAGS) $(FFLAGS) -c -o $@ $<
-
-rembo_libs = 	$(objdir)/nml.o \
-				$(objdir)/ncio.o \
-				$(objdir)/ncio_transpose.o \
-				$(objdir)/interp1D.o \
-				$(objdir)/gaussian_filter.o
+# nml, ncio, ncio_transpose, interp1D and gaussian_filter are provided by
+# fesm-utils (libfesmutils); rembo1 no longer vendors its own copies.
+rembo_libs =
 
 ###############################################
 ##
