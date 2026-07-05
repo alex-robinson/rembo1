@@ -4,7 +4,7 @@ INC_NC = -I/usr/include
 LIB_NC = -L/usr/lib/x86_64-linux-gnu -lnetcdff -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -lnetcdf -lnetcdf -ldl -lm
 
 # Compiler flags. FFLAGS_OPENMP is appended to FFLAGS by common.mk when
-# building with `make openmp=1`. INC_COORD is appended by common.mk.
+# building with `make openmp=1`. INC_FESMUTILS is appended by common.mk.
 FFLAGS = -I$(objdir) -J$(objdir) -m64 -ffree-line-length-none
 FFLAGS_OPENMP = -fomit-frame-pointer -fopenmp
 

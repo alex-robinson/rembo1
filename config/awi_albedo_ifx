@@ -7,7 +7,7 @@ LIB_NC = -L${NETCDFFI_ROOT}/lib -Wl\,-rpath=${NETCDFFI_ROOT}/lib -lnetcdff -L${N
 # the -rpath options ensure that the same shared libraries are found at runtime
 
 # Compiler flags (ifx). FFLAGS_OPENMP is appended to FFLAGS by common.mk
-# when building with `make openmp=1`. INC_COORD is appended by common.mk.
+# when building with `make openmp=1`. INC_FESMUTILS is appended by common.mk.
 FFLAGS = -no-wrap-margin -module $(objdir) -L$(objdir)
 FFLAGS_OPENMP = -qopenmp
 

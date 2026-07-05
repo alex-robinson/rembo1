@@ -5,7 +5,7 @@ INC_NC = -I${NC_FROOT}/include
 LIB_NC = -L${NC_FROOT}/lib -lnetcdff -L${NC_CROOT}/lib -lnetcdf
 
 # Compiler flags. FFLAGS_OPENMP is appended to FFLAGS by common.mk when
-# building with `make openmp=1`. INC_COORD is appended by common.mk.
+# building with `make openmp=1`. INC_FESMUTILS is appended by common.mk.
 FFLAGS = -ffree-line-length-none -I$(objdir) -J$(objdir)
 FFLAGS_OPENMP = -fomit-frame-pointer -fopenmp
 

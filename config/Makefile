@@ -21,7 +21,7 @@ openmp ?= 0
 
 ## SHARED DEPENDENCY WIRING ##
 # Pulled in after the compiler/machine fragment so it can reference FFLAGS,
-# FFLAGS_OPENMP, LIB_NC, and LFLAGS_EXTRA set there. Defines the coordinates
+# FFLAGS_OPENMP, LIB_NC, and LFLAGS_EXTRA set there. Defines the fesm-utils
 # and LIS paths, the openmp= build switch, and the final LFLAGS.
 
 include config/common.mk
