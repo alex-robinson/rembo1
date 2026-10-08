@@ -8,8 +8,9 @@
 # modules (formerly the standalone `coordinates` library, now folded into
 # libfesmutils). rembo1 links this directly instead of vendoring its own copies.
 FESMUTILSROOT = fesm-utils
-INC_FESMUTILS = -I${FESMUTILSROOT}/include-serial
-LIB_FESMUTILS = -L${FESMUTILSROOT}/include-serial -lfesmutils
+FESMUTILSLIBDIR = ${FESMUTILSROOT}/include-serial
+INC_FESMUTILS = -I${FESMUTILSLIBDIR}
+LIB_FESMUTILS = -L${FESMUTILSLIBDIR} -lfesmutils
 
 LISROOT = fesm-utils/lis/lis-serial
 INC_LIS = -I${LISROOT}/include
@@ -19,8 +20,7 @@ LIB_LIS = -L${LISROOT}/lib -llis
 FFLAGS += $(INC_FESMUTILS)
 
 ifeq ($(openmp), 1)
-    INC_FESMUTILS = -I${FESMUTILSROOT}/include-omp
-    LIB_FESMUTILS = -L${FESMUTILSROOT}/include-omp -lfesmutils
+    FESMUTILSLIBDIR = ${FESMUTILSROOT}/include-omp
 
     LISROOT = fesm-utils/lis/lis-omp
     INC_LIS = -I${LISROOT}/include
