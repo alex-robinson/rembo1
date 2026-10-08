@@ -58,12 +58,16 @@ rembo_libs =
 
 # MAIN PROGRAMS ####
 
-# Static library compilation
-rembo-static: $(rembo_libs) $(rembo_base)
-	ar rc $(objdir)/librembo.a $(rembo_libs) $(rembo_base)
-	ranlib $(objdir)/librembo.a
+# Static library compilation. The archive is a file target, so its mtime only
+# changes when an object does (hosts such as yelmox depend on it to rebuild
+# after a type change).
+rembo-static: $(objdir)/librembo.a
+
+$(objdir)/librembo.a: $(rembo_libs) $(rembo_base)
+	ar rc $@ $(rembo_libs) $(rembo_base)
+	ranlib $@
 	@echo " "
-	@echo "    $(objdir)/librembo.a is ready."
+	@echo "    $@ is ready."
 	@echo " "
 
 rembo: rembo-static
