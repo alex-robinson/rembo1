@@ -63,6 +63,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
     use rembo_main, only : mon, rembo0
     use ncio
     use ncio_transpose
+    use fesmdata, only : fesmdata_flux_conv
 
     implicit none
 
@@ -83,6 +84,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
     real(8), parameter :: dT_summer = 0.0
 
     real(8), allocatable :: sf(:,:), rf(:,:)
+    real(8) :: conv_rf, conv_sf
     character(len=256) :: fnm 
 
     nx = rembo_ann%par%nx
@@ -120,12 +122,14 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
       write(*,*) "pp_rembo ", k, minval(ppcorr0%pp_rembo(k,:,:)), maxval(ppcorr0%pp_rembo(k,:,:))
     end do
 
-    ! Load reference precipitation dataset
+    ! Load reference precipitation dataset, converted from the units of the file to mmwe/d
     write(*,*)
+    conv_rf = fesmdata_flux_conv(precip_mon_file,precip_mon_nms(1),"mm d-1")
+    conv_sf = fesmdata_flux_conv(precip_mon_file,precip_mon_nms(2),"mm d-1")
     do k = 1, nm
-      call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (rainfall)
-      call nc_read_t(precip_mon_file,precip_mon_nms(2),  sf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (snowfall)
-      ppcorr0%pp_ref(k,:,:) = rf + sf   ! rainfall + snowfall 
+      call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! rainfall
+      call nc_read_t(precip_mon_file,precip_mon_nms(2),  sf, start=[1,1,k], count=[nx,ny,1])     ! snowfall
+      ppcorr0%pp_ref(k,:,:) = rf*conv_rf + sf*conv_sf   ! rainfall + snowfall [mmwe/d]
       write(*,*) "pp_ref ", k, minval(ppcorr0%pp_ref(k,:,:)), maxval(ppcorr0%pp_ref(k,:,:)) 
     end do
 

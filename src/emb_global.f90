@@ -6,6 +6,8 @@ module emb_global
   use exchange
   use ncio
   use ncio_transpose 
+  use coordinates, only : grid_class
+  use fesmdata,    only : fesmdata_flux_conv, fesmdata_grid_read
 
   implicit none
 
@@ -874,6 +876,7 @@ end if
     real (8), dimension(ny,nx) :: mask_hydro
     real (8), dimension(ny,nx) :: H_ice 
     character (len=256) :: fnm
+    type(grid_class) :: grid_topo
     real (8), parameter :: dx = dxs
     
     select case(trim(domain))  ! (reinhard, calov-island)
@@ -887,8 +890,11 @@ end if
         fnm = trim(clim_file)
         write(*,*) "fnm = ", trim(fnm)
         write(*,*) "size(precip): ", size(precip,1), size(precip,2)
-        call nc_read_t(fnm,"rf",  precip)   ! mmwe/a (rainfall)
-        call nc_read_t(fnm,"sf",  accum)    ! mmwe/a (snowfall)
+        ! Converted from the units of the file to mmwe/a
+        call nc_read_t(fnm,"rf",  precip)   ! rainfall
+        call nc_read_t(fnm,"sf",  accum)    ! snowfall
+        precip = precip*fesmdata_flux_conv(fnm,"rf","mm yr-1")
+        accum  = accum *fesmdata_flux_conv(fnm,"sf","mm yr-1")
         precip = precip+accum               ! rainfall + snowfall 
         
     end select
@@ -904,8 +910,11 @@ end if
     
     ! Get default topo variables (present-day)
     !call nc_read_t(fnm,"mask",  m2)
-    call nc_read_t(fnm,"lat2D", lats)
-    call nc_read_t(fnm,"lon2D", lons)
+    ! Latitude and longitude [degrees] of the grid of the file (FesmData:
+    ! global attribute grid_name, description grid_<grid_name>.txt)
+    call fesmdata_grid_read(grid_topo, fnm)
+    lats = transpose(grid_topo%lat)
+    lons = transpose(grid_topo%lon)
     call nc_read_t(fnm,"z_srf", zs)
     call nc_read_t(fnm,"H_ice",H_ice)
     call nc_read_t(fnm,"z_bed", zb)
