@@ -287,6 +287,10 @@ end if
   
     call cpu_time(timer%climate)           ! get current time in seconds   
     
+    ! Grid coordinates [radians] (fixed; used by rembo, conventional and the output section)
+    lats = fields0%lats
+    lons = fields0%lons
+
     ! ##### Get time information #####
 
     ! yearnow needed for boundary forcing and sinsol2d
