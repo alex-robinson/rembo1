@@ -176,7 +176,7 @@ contains
     call nc_write_t(fnm,"tte",      vars%tte,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
     call nc_write_t(fnm,"pp",       vars%pp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
     call nc_write_t(fnm,"snow",     vars%snow,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
-    call nc_write_t(fnm,"snowh",    vars%snowh,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm",prec_abs=1d0)
+    call nc_write_t(fnm,"snowh",    vars%snowh,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm",prec_abs=1d-1)
     call nc_write_t(fnm,"ice",      vars%ice,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
     call nc_write_t(fnm,"runoff",   vars%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
     call nc_write_t(fnm,"melt",     vars%melt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
