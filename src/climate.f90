@@ -53,6 +53,7 @@ module rembo_sclimate
   public :: rembo_class
   public :: rembo_ann
   public :: rembo_restart_write
+  public :: rembo_dT_ann
 
 contains 
 
@@ -872,6 +873,29 @@ end if
     return
 
   end subroutine rembo_restart_write
+
+  function rembo_dT_ann(dT_summer) result(dT_ann)
+    ! The annual mean of the daily temperature anomaly rembo_update applies
+    ! for the summer anomaly dT_summer (without dT_mon): the seasonal cycle
+    ! of rembo_update_boundary_forcing_sin, winter = T_wintfac*summer, so
+    ! (1 + T_wintfac)/2 * dT_summer. Call after rembo_init (T_wintfac).
+
+    use emb_global,    only : T_wintfac, nk, day_year
+    use emb_functions, only : calc_deltaT_sin
+
+    implicit none
+
+    real(8), intent(IN) :: dT_summer
+    real(8) :: dT_ann
+
+    real(8) :: dT(nk)
+
+    call calc_deltaT_sin(dT,dT_summer,dT_summer*T_wintfac,day_year)
+    dT_ann = sum(dT) / dble(nk)
+
+    return
+
+  end function rembo_dT_ann
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l
