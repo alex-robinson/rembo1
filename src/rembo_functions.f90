@@ -80,21 +80,21 @@ contains
     
     call nc_write(fnm,"time",ndat,dim1="time",start=[ndat],count=[1])   ! ka => years
     
-    call nc_write_t(fnm,"tt",       vars%tt,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"pp",       vars%pp,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"qq",       vars%qq,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"rhum",     vars%rhum,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"S",        vars%S,   dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"co2",      vars%co2, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"ap",       vars%ap,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"apS",      vars%apS, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"ABT",      vars%ABT, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"d2T",      vars%d2T, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"Lr",       vars%Lr,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"Ls",       vars%Ls,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"Ldh",      vars%Ldh, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
-    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1])
+    call nc_write_t(fnm,"tt",       vars%tt,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_abs=1d-3)
+    call nc_write_t(fnm,"pp",       vars%pp,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"qq",       vars%qq,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"rhum",     vars%rhum,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"S",        vars%S,   dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"co2",      vars%co2, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"ap",       vars%ap,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"apS",      vars%apS, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"ABT",      vars%ABT, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"d2T",      vars%d2T, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"Lr",       vars%Lr,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"Ls",       vars%Ls,  dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"Ldh",      vars%Ldh, dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"snow",     vars%snow,dim1="x",dim2="y",dim3="time",start=[1,1,ndat],count=[nxe,nye,1],prec_rel=1d-4)
 
     return
     
@@ -167,40 +167,40 @@ contains
     if (present(mask_hydro)) call nc_write_t(fnm,"mask_hydro",mask_hydro,dim1="x",dim2="y")
     if (present(mask_hydro)) call nc_write_t(fnm,"mask_relax",dble(mask_relax),dim1="x",dim2="y")
     if (present(zs))         call nc_write_t(fnm,"zs",        zs  ,      dim1="x",dim2="y",dim3="time", &
-                                            start=[1,1,1],count=[nxs,nys,1])
+                                            start=[1,1,1],count=[nxs,nys,1],prec_abs=1d-3)
     
     if (allocated(dims)) deallocate(dims); allocate(dims(3))
     dims(1) = "x"; dims(2) = "y"; dims(3) = "time"
 
-    call nc_write_t(fnm,"tt",       vars%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"tte",      vars%tte,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    call nc_write_t(fnm,"pp",       vars%pp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"snow",     vars%snow,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"snowh",    vars%snowh,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm")
-    call nc_write_t(fnm,"ice",      vars%ice,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"runoff",   vars%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"melt",     vars%melt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"smb",      vars%pp-vars%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"smbi",     vars%ice-vars%melted_ice,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"S",        vars%S,  dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    if (melt_choice .le. 0) call nc_write_t(fnm,"S0", vars%S0,  dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"as",       vars%as, dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"ap",       vars%ap, dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"ap0",      vars%ap0,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"rf",       vars%rf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"refrozen", vars%refrozen,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"melt_insol", vars%melt_insol,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"melt_S0",    vars%melt_S0,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
+    call nc_write_t(fnm,"tt",       vars%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    call nc_write_t(fnm,"tte",      vars%tte,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    call nc_write_t(fnm,"pp",       vars%pp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"snow",     vars%snow,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"snowh",    vars%snowh,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm",prec_abs=1d-1)
+    call nc_write_t(fnm,"ice",      vars%ice,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"runoff",   vars%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"melt",     vars%melt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"smb",      vars%pp-vars%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"smbi",     vars%ice-vars%melted_ice,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"S",        vars%S,  dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
+    if (melt_choice .le. 0) call nc_write_t(fnm,"S0", vars%S0,  dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"as",       vars%as, dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"ap",       vars%ap, dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"ap0",      vars%ap0,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"rf",       vars%rf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-4)
+    call nc_write_t(fnm,"refrozen", vars%refrozen,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"melt_insol", vars%melt_insol,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"melt_S0",    vars%melt_S0,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
 
     ! If desired, write mean fields too
-    if (present(tjja))     call nc_write_t(fnm,"tjja",tjja,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    if (present(tdjf))     call nc_write_t(fnm,"tdjf",tdjf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    if (present(ttp))      call nc_write_t(fnm,"ttp",ttp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    if (present(rf))       call nc_write_t(fnm,"jh_rf",rf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    if (present(refrozen)) call nc_write_t(fnm,"jh_refrozen",refrozen,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a") 
-    if (present(pkappa))   call nc_write_t(fnm,"pkappa",pkappa,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    if (present(qqfac))    call nc_write_t(fnm,"qqfac",qqfac,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    if (present(pdds))     call nc_write_t(fnm,"pdds",pdds,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
+    if (present(tjja))     call nc_write_t(fnm,"tjja",tjja,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    if (present(tdjf))     call nc_write_t(fnm,"tdjf",tdjf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    if (present(ttp))      call nc_write_t(fnm,"ttp",ttp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    if (present(rf))       call nc_write_t(fnm,"jh_rf",rf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-4)
+    if (present(refrozen)) call nc_write_t(fnm,"jh_refrozen",refrozen,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    if (present(pkappa))   call nc_write_t(fnm,"pkappa",pkappa,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
+    if (present(qqfac))    call nc_write_t(fnm,"qqfac",qqfac,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
+    if (present(pdds))     call nc_write_t(fnm,"pdds",pdds,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
 
     if (present(write_mon)) then 
       if (write_mon) then
@@ -208,12 +208,12 @@ contains
         if (allocated(dims)) deallocate(dims); allocate(dims(4))
         dims(1) = "x"; dims(2) = "y"; dims(3) = "month"; dims(4) = "time"
 
-        call nc_write_t(fnm,"m_S",       savedm%S,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="W m-2")
-        call nc_write_t(fnm,"m_S0",      savedm%S0,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="W m-2")
-        call nc_write_t(fnm,"m_tt",      savedm%tt,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="degrees celcius")
-        call nc_write_t(fnm,"m_melt",    savedm%melt/30,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="mm d-1")
-        call nc_write_t(fnm,"m_as",      savedm%as,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="1")
-        call nc_write_t(fnm,"m_pdd_corr",savedm%pdd_corr,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="mm d-1 / W m-2")
+        call nc_write_t(fnm,"m_S",       savedm%S,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="W m-2",prec_rel=1d-4)
+        call nc_write_t(fnm,"m_S0",      savedm%S0,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="W m-2",prec_rel=1d-4)
+        call nc_write_t(fnm,"m_tt",      savedm%tt,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="degrees celcius",prec_abs=1d-3)
+        call nc_write_t(fnm,"m_melt",    savedm%melt/30,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="mm d-1",prec_rel=1d-4)
+        call nc_write_t(fnm,"m_as",      savedm%as,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="1",prec_abs=1d-4)
+        call nc_write_t(fnm,"m_pdd_corr",savedm%pdd_corr,dims=dims,start=[1,1,1,ndat],count=[nxs,nys,nm,1],units="mm d-1 / W m-2",prec_rel=1d-4)
       end if
     end if 
 
@@ -240,19 +240,19 @@ contains
     
     ! Add variables
     call nc_write_t(fnm,"mask",     mask,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"zs",       zs  ,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="m")
+    call nc_write_t(fnm,"zs",       zs  ,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="m",prec_abs=1d-3)
     
-    call nc_write_t(fnm,"tann",     ann%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C")
-    call nc_write_t(fnm,"tjan",     mon(1)%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C")
-    call nc_write_t(fnm,"tjul",     mon(7)%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C")
-    call nc_write_t(fnm,"pp",       ann%pp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"snow",     ann%snow,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
-    call nc_write_t(fnm,"smb",      ann%pp-ann%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a")
+    call nc_write_t(fnm,"tann",     ann%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C",prec_abs=1d-3)
+    call nc_write_t(fnm,"tjan",     mon(1)%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C",prec_abs=1d-3)
+    call nc_write_t(fnm,"tjul",     mon(7)%tt,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="degrees C",prec_abs=1d-3)
+    call nc_write_t(fnm,"pp",       ann%pp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"snow",     ann%snow,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
+    call nc_write_t(fnm,"smb",      ann%pp-ann%runoff,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],units="mm/a",prec_rel=1d-4)
 
-    call nc_write_t(fnm,"pdds",pdds,dims=dims,start=[1,1,ndat],count=[nxs,nys,1])
-    call nc_write_t(fnm,"tjja",tjja,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    call nc_write_t(fnm,"tdjf",tdjf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
-    call nc_write_t(fnm,"ttp", ttp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1]) 
+    call nc_write_t(fnm,"pdds",pdds,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_rel=1d-4)
+    call nc_write_t(fnm,"tjja",tjja,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    call nc_write_t(fnm,"tdjf",tdjf,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
+    call nc_write_t(fnm,"ttp", ttp,dims=dims,start=[1,1,ndat],count=[nxs,nys,1],prec_abs=1d-3)
 
     return
     

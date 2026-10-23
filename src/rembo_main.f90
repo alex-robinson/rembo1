@@ -620,7 +620,7 @@ contains
         ann%snowh = 0.d0; ann%dh = 0.d0
         
         ! Get annual melt (like standard annual PDD approach)
-        call melt_budget( m2, zs, day(kd)%S, ann%tt, ann%tte*day_year, veg_pdds,  &
+        call melt_budget( m2, zs, ann%S, ann%tt, ann%tte*day_year, veg_pdds,  &
                           ann%pp, ann%snow, mmfac, ann%as, ann%ap,  &
                           ann%snowh, ann%rf, ann%runoff,   &
                           ann%runoff_snow, ann%runoff_rain, ann%melt,  &

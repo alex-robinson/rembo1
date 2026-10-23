@@ -49,5 +49,6 @@ rembo_base =           $(objdir)/exchange.o \
 					   $(objdir)/climate.o \
 					   $(objdir)/sinsol_orbit.o
 
-
-
+# rembo1 objects embed fesm-utils types: rebuild them when libfesmutils.a
+# changes, or objects keep a stale type layout (fesmc/FastHydrology#10).
+$(rembo_libs) $(rembo_base): $(FESMUTILSLIBDIR)/libfesmutils.a

@@ -53,6 +53,7 @@ module rembo_sclimate
   public :: rembo_class
   public :: rembo_ann
   public :: rembo_restart_write
+  public :: rembo_dT_ann
 
 contains 
 
@@ -63,6 +64,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
     use rembo_main, only : mon, rembo0
     use ncio
     use ncio_transpose
+    use fesmdata, only : fesmdata_flux_conv
 
     implicit none
 
@@ -83,6 +85,7 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
     real(8), parameter :: dT_summer = 0.0
 
     real(8), allocatable :: sf(:,:), rf(:,:)
+    real(8) :: conv_rf, conv_sf
     character(len=256) :: fnm 
 
     nx = rembo_ann%par%nx
@@ -120,12 +123,14 @@ subroutine rembo_equilibrate(time,z_srf,H_ice,z_sl,mask_relax,time_tot)
       write(*,*) "pp_rembo ", k, minval(ppcorr0%pp_rembo(k,:,:)), maxval(ppcorr0%pp_rembo(k,:,:))
     end do
 
-    ! Load reference precipitation dataset
+    ! Load reference precipitation dataset, converted from the units of the file to mmwe/d
     write(*,*)
+    conv_rf = fesmdata_flux_conv(precip_mon_file,precip_mon_nms(1),"mm d-1")
+    conv_sf = fesmdata_flux_conv(precip_mon_file,precip_mon_nms(2),"mm d-1")
     do k = 1, nm
-      call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (rainfall)
-      call nc_read_t(precip_mon_file,precip_mon_nms(2),  sf, start=[1,1,k], count=[nx,ny,1])     ! mmwe/d (snowfall)
-      ppcorr0%pp_ref(k,:,:) = rf + sf   ! rainfall + snowfall 
+      call nc_read_t(precip_mon_file,precip_mon_nms(1),  rf, start=[1,1,k], count=[nx,ny,1])     ! rainfall
+      call nc_read_t(precip_mon_file,precip_mon_nms(2),  sf, start=[1,1,k], count=[nx,ny,1])     ! snowfall
+      ppcorr0%pp_ref(k,:,:) = rf*conv_rf + sf*conv_sf   ! rainfall + snowfall [mmwe/d]
       write(*,*) "pp_ref ", k, minval(ppcorr0%pp_ref(k,:,:)), maxval(ppcorr0%pp_ref(k,:,:)) 
     end do
 
@@ -283,6 +288,10 @@ end if
   
     call cpu_time(timer%climate)           ! get current time in seconds   
     
+    ! Grid coordinates [radians] (fixed; used by rembo, conventional and the output section)
+    lats = fields0%lats
+    lons = fields0%lons
+
     ! ##### Get time information #####
 
     ! yearnow needed for boundary forcing and sinsol2d
@@ -864,6 +873,29 @@ end if
     return
 
   end subroutine rembo_restart_write
+
+  function rembo_dT_ann(dT_summer) result(dT_ann)
+    ! The annual mean of the daily temperature anomaly rembo_update applies
+    ! for the summer anomaly dT_summer (without dT_mon): the seasonal cycle
+    ! of rembo_update_boundary_forcing_sin, winter = T_wintfac*summer, so
+    ! (1 + T_wintfac)/2 * dT_summer. Call after rembo_init (T_wintfac).
+
+    use emb_global,    only : T_wintfac, nk, day_year
+    use emb_functions, only : calc_deltaT_sin
+
+    implicit none
+
+    real(8), intent(IN) :: dT_summer
+    real(8) :: dT_ann
+
+    real(8) :: dT(nk)
+
+    call calc_deltaT_sin(dT,dT_summer,dT_summer*T_wintfac,day_year)
+    dT_ann = sum(dT) / dble(nk)
+
+    return
+
+  end function rembo_dT_ann
   
   ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ! Subroutine : c o n v e n t i o n a l
